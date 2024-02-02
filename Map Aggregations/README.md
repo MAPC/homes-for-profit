@@ -1,0 +1,1 @@
+The scripts in this folder aggregate the data output by the scripts in the Data Cleaning and Classification folder to the state, municipality, and census tract levels and calculate the various fields visualized on the interactive maps at http://homesforprofit.mapc.org/ 
