@@ -95,8 +95,8 @@ warren_buyer_seller_id = warren_price_adj %>%
                                 | buyer2_adj %like% '^BANK OF',
                                 1,
                                 0),
-         buyer_gse_ind = ifelse(buyer1_adj %in% c('FEDERAL NATIONAL MORTGAGE ASSOCIATION (FANNIE MAE)', 'FEDERAL HOME LOAN MORTGAGE CORPORATION (Freddie Mac)')
-                                | buyer2_adj %in% c('FEDERAL NATIONAL MORTGAGE ASSOCIATION (FANNIE MAE)', 'FEDERAL HOME LOAN MORTGAGE CORPORATION (Freddie Mac)'),
+         buyer_gse_ind = ifelse(buyer1_adj %in% c('FEDERAL NATIONAL MORTGAGE ASSOCIATION (FANNIE MAE)', 'FEDERAL HOME LOAN MORTGAGE CORPORATION (FREDDIE MAC)')
+                                | buyer2_adj %in% c('FEDERAL NATIONAL MORTGAGE ASSOCIATION (FANNIE MAE)', 'FEDERAL HOME LOAN MORTGAGE CORPORATION (FREDDIE MAC)'),
                                 1,
                                 0),
          buyer_gov_ind = ifelse(buyer1_adj %in% c('MHFA', 'USA HUD')
