@@ -6,7 +6,7 @@ library(sf)
 
 #Office
 data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
-export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/"
+#export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/"
 
 #Home
 # data_path <- "S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
@@ -31,7 +31,17 @@ warren_all <- warren_select %>%
 #summarizing different variables to 2020 census tracts
 ct_transactions <- warren_select %>% 
   group_by(ct20_id) %>% 
-  summarize(tot_trans = n())
+  summarize(trans_0022 = n())
+
+ct_transactions_2002_2020 <- warren_select %>% 
+  filter(year >= 2002 & year <= 2020) %>% 
+  group_by(ct20_id) %>% 
+  summarize(trans_0220 = n())
+
+ct_transactions_2004_2018 <- warren_select %>% 
+  filter(year >= 2004 & year <= 2018) %>% 
+  group_by(ct20_id) %>% 
+  summarize(trans_0418 = n())
 
 ct_investor_all <- warren_select %>% 
   filter(investor_type_purchase != 'Non-investor') %>% 
@@ -139,7 +149,7 @@ warren_ct20 <- full_join(warren_all, ct_transactions, by = 'ct20_id') %>%
   full_join(r2f, by = 'ct20_id') %>% 
   full_join(r3f, by = 'ct20_id') %>% 
   #calculing %s
-  mutate(inv_p = inv_trans/tot_trans,
+  mutate(inv_p = inv_trans/trans_0022,
          sm_inv_p = sm_inv/inv_trans,
          med_inv_p = med_inv/inv_trans,
          lrg_inv_p = lrg_inv/inv_trans,
@@ -150,8 +160,8 @@ warren_ct20 <- full_join(warren_all, ct_transactions, by = 'ct20_id') %>%
          val_inv_p = value_inv/inv_trans,
          c_inv_p = count_inv/inv_trans,
          bld_inv_p = build_inv/inv_trans,
-         cash_p = cash_trans/tot_trans,
-         flip_p = flip_count/tot_trans
+         cash_p = cash_trans/trans_0022,
+         flip_p = flip_count/trans_0022
          ) %>% 
   relocate("li_inv", .after = inst_inv) %>% 
   relocate(c("flip_count", "sf_inv", "r2f_inv", "r3f_inv"), .after = cash_trans) %>% 

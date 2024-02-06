@@ -6,7 +6,7 @@ library(sf)
 
 #Office
 data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
-export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/"
+#export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/"
 
 #Home
 # data_path <- "S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
@@ -42,87 +42,87 @@ warren_all <- warren_select %>%
   #variables looking at flips are filtered to the years 2002-2020
 muni_transactions_all <- warren_select %>% 
   group_by(municipal) %>% 
-  summarize(tot_trans = n())
+  summarize(trans_0022 = n())
 
 muni_transactions_2002_2020 <- warren_select %>% 
-  filter(year >= 2002 & year <= 2020) %>% 
+#  filter(year >= 2002 & year <= 2020) %>% 
   group_by(municipal) %>% 
-  summarize(trans_02_20 = n())
+  summarize(trans_0220 = n())
 
 muni_transactions_2004_2018 <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>% 
+#  filter(year >= 2004 & year <= 2018) %>% 
   group_by(municipal) %>% 
-  summarize(trans_04_18 = n())
+  summarize(trans_0418 = n())
 
 muni_investor_all <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>%
+#  filter(year >= 2004 & year <= 2018) %>%
   filter(investor_type_purchase != 'Non-investor') %>% 
   group_by(municipal) %>% 
   summarize(inv_trans = n())
 
 muni_investor_small <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>%
+#  filter(year >= 2004 & year <= 2018) %>%
   filter(investor_type_purchase == 'Small') %>% 
   group_by(municipal) %>% 
   summarize(sm_inv = n())
 
 muni_investor_medium <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>%
+#  filter(year >= 2004 & year <= 2018) %>%
   filter(investor_type_purchase == 'Medium') %>% 
   group_by(municipal) %>% 
   summarize(med_inv = n())
 
 muni_investor_large <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>%
+#  filter(year >= 2004 & year <= 2018) %>%
   filter(investor_type_purchase == 'Large') %>% 
   group_by(municipal) %>% 
   summarize(lrg_inv = n())
 
 muni_investor_inst <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>%
+#  filter(year >= 2004 & year <= 2018) %>%
   filter(investor_type_purchase == 'Institutional') %>% 
   group_by(municipal) %>% 
   summarize(inst_inv = n())
 
 muni_investor_llc <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>%
+#  filter(year >= 2004 & year <= 2018) %>%
   filter(investor_type_purchase_llc == 'Small LLC') %>% 
   group_by(municipal) %>% 
   summarize(llc_inv = n())
 
 muni_investor_value <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>%
+#  filter(year >= 2004 & year <= 2018) %>%
   filter(investor_type_purchase_value != 'Non-value investor') %>% 
   group_by(municipal) %>% 
   summarize(value_inv = n())
 
 muni_investor_count <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>%
+#  filter(year >= 2004 & year <= 2018) %>%
   filter(investor_type_purchase_count != 'Non-count investor') %>% 
   group_by(municipal) %>% 
   summarize(count_inv = n())
 
 muni_investor_building <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>%
+#  filter(year >= 2004 & year <= 2018) %>%
   filter(investor_type_purchase_building == 'Building Investor') %>% 
   group_by(municipal) %>% 
   summarize(build_inv = n())
 
 muni_cash_buyers <- warren_select %>% 
-  filter(cash_sale == 1) %>% 
+#  filter(cash_sale == 1) %>% 
   group_by(municipal) %>% 
   summarize(cash_trans = n())
 
 #number of flips 
 flips <- warren_select %>% 
-  filter(year >= 2002 & year <= 2020) %>%
+#  filter(year >= 2002 & year <= 2020) %>%
   filter(flip_ind == 1) %>% 
   group_by(municipal) %>% 
   summarize(flip_count = n())
 
 #count and % of R1F investor purchases
 single_fam <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>%
+#  filter(year >= 2004 & year <= 2018) %>%
   filter(restype == 'R1F') %>% 
   group_by(municipal) %>%
   mutate(sf_trans = n()) %>% 
@@ -134,7 +134,7 @@ single_fam <- warren_select %>%
 
 #count and % of R2F investor purchases
 r2f <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>%
+#  filter(year >= 2004 & year <= 2018) %>%
   filter(restype == 'R2F') %>% 
   group_by(municipal) %>%
   mutate(r2f_trans = n()) %>% 
@@ -146,7 +146,7 @@ r2f <- warren_select %>%
 
 #count and % of R3F investor purchases
 r3f <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>%
+#  filter(year >= 2004 & year <= 2018) %>%
   filter(restype == 'R3F') %>% 
   group_by(municipal) %>%
   mutate(r3f_trans = n()) %>% 
@@ -175,7 +175,7 @@ warren_municipal <- full_join(warren_all, muni_transactions_all, by = 'municipal
   full_join(r2f, by = 'municipal') %>% 
   full_join(r3f, by = 'municipal') %>% 
   #calculing %s
-    mutate(inv_p = inv_trans/tot_trans,
+    mutate(inv_p = inv_trans/trans_0022,
            sm_inv_p = sm_inv/inv_trans,
            med_inv_p = med_inv/inv_trans,
            lrg_inv_p = lrg_inv/inv_trans,
@@ -186,16 +186,16 @@ warren_municipal <- full_join(warren_all, muni_transactions_all, by = 'municipal
            val_inv_p = value_inv/inv_trans,
            c_inv_p = count_inv/inv_trans,
            bld_inv_p = build_inv/inv_trans,
-           cash_p = cash_trans/tot_trans,
-           flip_p = flip_count/tot_trans
+           cash_p = cash_trans/trans_0022,
+           flip_p = flip_count/trans_0022
     ) %>% 
     relocate("li_inv", .after = inst_inv) %>% 
     relocate(c("flip_count", "sf_inv", "r2f_inv", "r3f_inv"), .after = cash_trans) %>% 
-    relocate(c("flip_p", "sf_inv_p", "r2f_inv_p", "r3f_inv_p"), .after = cash_p) %>% 
-  rename_at(vars(-municipal, -muni_id), ~ paste0("muni_", .x)) 
+    relocate(c("flip_p", "sf_inv_p", "r2f_inv_p", "r3f_inv_p"), .after = cash_p) 
+ # rename_at(vars(-municipal, -muni_id), ~ paste0("muni_", .x)) 
 
-view(warren_municipal)  
+#view(warren_municipal)  
 
 #export muni table
-write.csv(warren_municipal, 'warren_municipal_agg_1-11-2024.csv')
+write.csv(warren_municipal, 'warren_municipal_agg.csv')
 
