@@ -29,7 +29,7 @@ warren_all <- warren_select %>%
   distinct()
 
 #summarizing different variables to 2020 census tracts
-ct_transactions <- warren_select %>% 
+ct_transactions_all <- warren_select %>% 
   group_by(ct20_id) %>% 
   summarize(trans_0022 = n())
 
@@ -133,7 +133,9 @@ r3f <- warren_select %>%
   distinct()
 
 #joining summary tables
-warren_ct20 <- full_join(warren_all, ct_transactions, by = 'ct20_id') %>% 
+warren_ct20 <- full_join(warren_all, ct_transactions_all, by = 'ct20_id') %>% 
+  full_join(ct_transactions_2002_2020, by = 'ct20_id') %>% 
+  full_join(ct_transactions_2004_2018, by = 'ct20_id') %>% 
   full_join(ct_investor_all, by = 'ct20_id') %>% 
   full_join(ct_investor_small, by = 'ct20_id') %>%
   full_join(ct_investor_medium, by = 'ct20_id') %>%
