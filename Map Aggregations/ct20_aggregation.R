@@ -15,7 +15,7 @@ data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Res
 setwd(data_path)
 
 #Data - 5yr window
-warren <- read_csv("20230131_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv")
+warren <- read_csv("20240313_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv")
 
 warren_select <- warren %>% 
   select(ct20_id, muni_id, municipal, buyer1_adj, seller1_adj, latitude, longitude, year, cash_sale, price_adj, flip_horizon, flip_ind, buy_side_flip, sell_side_flip,
@@ -31,39 +31,49 @@ warren_all <- warren_select %>%
 #summarizing different variables to 2020 census tracts
 ct_transactions_all <- warren_select %>% 
   group_by(ct20_id) %>% 
-  summarize(trans_0022 = n())
+  summarize(trans_0023 = n())
 
-ct_transactions_2002_2020 <- warren_select %>% 
-  filter(year >= 2002 & year <= 2020) %>% 
+ct_transactions_2002_2021 <- warren_select %>% 
+  filter(year >= 2002 & year <= 2021) %>% 
   group_by(ct20_id) %>% 
   summarize(trans_0220 = n())
 
-ct_transactions_2004_2018 <- warren_select %>% 
-  filter(year >= 2004 & year <= 2018) %>% 
+ct_transactions_2004_2019 <- warren_select %>% 
+  filter(year >= 2004 & year <= 2019) %>% 
   group_by(ct20_id) %>% 
-  summarize(trans_0418 = n())
+  summarize(trans_0419 = n())
 
-ct_investor_all <- warren_select %>% 
+ct_investor_0419 <- warren_select %>% 
+  filter(year >= 2004 & year <= 2019) %>% 
   filter(investor_type_purchase != 'Non-investor') %>% 
   group_by(ct20_id) %>% 
-  summarize(inv_trans = n())
+  summarize(inv_trans_0419 = n())
+
+ct_investor_0023 <- warren_select %>% 
+  filter(investor_type_purchase != 'Non-investor') %>% 
+  group_by(ct20_id) %>% 
+  summarize(inv_trans_0023 = n())
 
 ct_investor_small <- warren_select %>% 
+  filter(year >= 2004 & year <= 2019) %>% 
   filter(investor_type_purchase == 'Small') %>% 
   group_by(ct20_id) %>% 
   summarize(sm_inv = n())
 
 ct_investor_medium <- warren_select %>% 
+  filter(year >= 2004 & year <= 2019) %>% 
   filter(investor_type_purchase == 'Medium') %>% 
   group_by(ct20_id) %>% 
   summarize(med_inv = n())
 
 ct_investor_large <- warren_select %>% 
+  filter(year >= 2004 & year <= 2019) %>% 
   filter(investor_type_purchase == 'Large') %>% 
   group_by(ct20_id) %>% 
   summarize(lrg_inv = n())
 
 ct_investor_inst <- warren_select %>% 
+  filter(year >= 2004 & year <= 2019) %>% 
   filter(investor_type_purchase == 'Institutional') %>% 
   group_by(ct20_id) %>% 
   summarize(inst_inv = n())
@@ -79,6 +89,7 @@ ct_investor_value <- warren_select %>%
   summarize(value_inv = n())
 
 ct_investor_count <- warren_select %>% 
+  filter(year >= 2004 & year <= 2019) %>% 
   filter(investor_type_purchase_count != 'Non-count investor') %>% 
   group_by(ct20_id) %>% 
   summarize(count_inv = n())
@@ -95,12 +106,26 @@ ct_cash_buyers <- warren_select %>%
 
 #number of flips 
 flips <- warren_select %>% 
+  filter(year >= 2002 & year <= 2021) %>% 
   filter(flip_ind == 1) %>% 
   group_by(ct20_id) %>% 
   summarize(flip_count = n())
 
+#count and % of condo investor purchases
+condos <- warren_select %>% 
+  filter(year >= 2004 & year <= 2019) %>% 
+  filter(restype == 'CON') %>% 
+  group_by(ct20_id) %>%
+  mutate(con_trans = n()) %>% 
+  filter(investor_type_purchase != 'Non-investor') %>% 
+  mutate(con_inv = n(),
+         con_inv_p = con_inv/con_trans) %>% 
+  select(municipal, con_inv, con_inv_p) %>% 
+  distinct()
+
 #count and % of R1F investor purchases
 single_fam <- warren_select %>% 
+  filter(year >= 2004 & year <= 2019) %>% 
   filter(restype == 'R1F') %>% 
   group_by(ct20_id) %>%
   mutate(sf_trans = n()) %>% 
@@ -112,6 +137,7 @@ single_fam <- warren_select %>%
 
 #count and % of R2F investor purchases
 r2f <- warren_select %>% 
+  filter(year >= 2004 & year <= 2019) %>% 
   filter(restype == 'R2F') %>% 
   group_by(ct20_id) %>%
   mutate(r2f_trans = n()) %>% 
@@ -123,6 +149,7 @@ r2f <- warren_select %>%
 
 #count and % of R3F investor purchases
 r3f <- warren_select %>% 
+  filter(year >= 2004 & year <= 2019) %>% 
   filter(restype == 'R3F') %>% 
   group_by(ct20_id) %>%
   mutate(r3f_trans = n()) %>% 
@@ -134,9 +161,10 @@ r3f <- warren_select %>%
 
 #joining summary tables
 warren_ct20 <- full_join(warren_all, ct_transactions_all, by = 'ct20_id') %>% 
-  full_join(ct_transactions_2002_2020, by = 'ct20_id') %>% 
-  full_join(ct_transactions_2004_2018, by = 'ct20_id') %>% 
-  full_join(ct_investor_all, by = 'ct20_id') %>% 
+  full_join(ct_transactions_2002_2021, by = 'ct20_id') %>% 
+  full_join(ct_transactions_2004_2019, by = 'ct20_id') %>% 
+  full_join(ct_investor_0419, by = 'ct20_id') %>% 
+  full_join(ct_investor_0023, by = 'ct20_id') %>% 
   full_join(ct_investor_small, by = 'ct20_id') %>%
   full_join(ct_investor_medium, by = 'ct20_id') %>%
   full_join(ct_investor_large, by = 'ct20_id') %>%
@@ -147,30 +175,31 @@ warren_ct20 <- full_join(warren_all, ct_transactions_all, by = 'ct20_id') %>%
   full_join(ct_investor_building, by = 'ct20_id') %>% 
   full_join(ct_cash_buyers, by = 'ct20_id') %>% 
   full_join(flips, by = 'ct20_id') %>% 
+  full_join(condos, by = 'ct20_id') %>% 
   full_join(single_fam, by = 'ct20_id') %>% 
   full_join(r2f, by = 'ct20_id') %>% 
   full_join(r3f, by = 'ct20_id') %>% 
   #calculing %s
-  mutate(inv_p = inv_trans/trans_0022,
-         sm_inv_p = sm_inv/inv_trans,
-         med_inv_p = med_inv/inv_trans,
-         lrg_inv_p = lrg_inv/inv_trans,
-         inst_inv_p = inst_inv/inv_trans,
-         li_inv = lrg_inv + inst_inv,
-         li_inv_p = li_inv/inv_trans,
-         llc_inv_p = llc_inv/inv_trans,
-         val_inv_p = value_inv/inv_trans,
-         c_inv_p = count_inv/inv_trans,
-         bld_inv_p = build_inv/inv_trans,
-         cash_p = cash_trans/trans_0022,
-         flip_p = flip_count/trans_0022
+  mutate(inv_p = inv_trans/trans_0419, #2004 - 2019 investor transactions/total transactions
+         sm_inv_p = sm_inv/inv_trans_0419, #2004 - 2019 small investor transactions/total investor transactions
+         med_inv_p = med_inv/inv_trans_0419, #2004 - 2019 medium investor transactions/total investor transactions
+         lrg_inv_p = lrg_inv/inv_trans_0419, #2004 - 2019 large investor transactions/total investor transactions
+         inst_inv_p = inst_inv/inv_trans_0419, #2004 - 2019 institutional investor transactions/total investor transactions
+         li_inv = lrg_inv + inst_inv, #2004 - 2019 total large and instututional transactions
+         li_inv_p = li_inv/inv_trans_0419, #2004 - 2019 lrg + inst investor transactions/total investor transactions
+         llc_inv_p = llc_inv/inv_trans_0023, #2000 - 2023 llc investor transactions/total investor transactions
+         val_inv_p = value_inv/inv_trans_0023, #2000 - 2023 value investor transactions/total investor transactions
+         c_inv_p = count_inv/inv_trans_0419, #2004 - 2019 count investor transactions/total investor transactions
+         bld_inv_p = build_inv/inv_trans_0023, #2000 - 2023 building investor transactions/total investor transactions
+         cash_p = cash_trans/trans_0023, #2000 to 2023 cash transactions / total transactions
+         flip_p = flip_count/trans_0221 #2002 to 2021 flip transactions / total transactions
          ) %>% 
   relocate("li_inv", .after = inst_inv) %>% 
-  relocate(c("flip_count", "sf_inv", "r2f_inv", "r3f_inv"), .after = cash_trans) %>% 
-  relocate(c("flip_p", "sf_inv_p", "r2f_inv_p", "r3f_inv_p"), .after = cash_p)
+  relocate(c("flip_count", "con_inv", "sf_inv", "r2f_inv", "r3f_inv"), .after = cash_trans) %>% 
+  relocate(c("flip_p", "con_inv_p", "sf_inv_p", "r2f_inv_p", "r3f_inv_p"), .after = cash_p)
 
 #export ct table
-write.csv(warren_ct20, 'warren_ct20_agg.csv')
+write.csv(warren_ct20, 'warren_ct20_agg_2000_2023.csv')
  
 # view(warren_ct20)
 # warren_ct20 %>% colnames()
