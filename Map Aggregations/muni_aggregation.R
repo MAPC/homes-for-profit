@@ -8,14 +8,10 @@ library(sf)
 data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
 #export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/"
 
-#Home
-# data_path <- "S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
-# export_path <- "S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/"
-
 setwd(data_path)
 
 #Data - 5yr window
-warren <- read_csv("20240313_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv")
+warren <- read_csv("20240328_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv")
 
 warren_select <- warren %>% 
   select(muni_id, municipal, buyer1_adj, seller1_adj, latitude, longitude, year, cash_sale, price_adj, flip_horizon, flip_ind, buy_side_flip, sell_side_flip,
@@ -90,13 +86,11 @@ muni_investor_inst <- warren_select %>%
   summarize(inst_inv = n())
 
 muni_investor_llc <- warren_select %>% 
-  filter(year >= 2004 & year <= 2019) %>%
   filter(investor_type_purchase_llc == 'Small LLC') %>% 
   group_by(municipal) %>% 
   summarize(llc_inv = n())
 
 muni_investor_value <- warren_select %>% 
-  filter(year >= 2004 & year <= 2019) %>%
   filter(investor_type_purchase_value != 'Non-value investor') %>% 
   group_by(municipal) %>% 
   summarize(value_inv = n())
@@ -108,7 +102,6 @@ muni_investor_count <- warren_select %>%
   summarize(count_inv = n())
 
 muni_investor_building <- warren_select %>% 
-  filter(year >= 2004 & year <= 2019) %>%
   filter(investor_type_purchase_building == 'Building Investor') %>% 
   group_by(municipal) %>% 
   summarize(build_inv = n())
@@ -146,7 +139,7 @@ single_fam <- warren_select %>%
   filter(investor_type_purchase != 'Non-investor') %>% 
   mutate(sf_inv = n(),
          sf_inv_p = sf_inv/sf_trans) %>% 
-  select(municipal, sf_inv, sf_trans, sf_inv_p) %>% 
+  select(municipal, sf_inv, sf_inv_p) %>% 
   distinct()
 
 #count and % of R2F investor purchases
@@ -158,7 +151,7 @@ r2f <- warren_select %>%
   filter(investor_type_purchase != 'Non-investor') %>% 
   mutate(r2f_inv = n(),
          r2f_inv_p = r2f_inv/r2f_trans) %>% 
-  select(municipal, r2f_inv, r2f_trans, r2f_inv_p) %>% 
+  select(municipal, r2f_inv, r2f_inv_p) %>% 
   distinct()
 
 #count and % of R3F investor purchases
@@ -170,7 +163,7 @@ r3f <- warren_select %>%
   filter(investor_type_purchase != 'Non-investor') %>% 
   mutate(r3f_inv = n(),
          r3f_inv_p = r3f_inv/r3f_trans) %>% 
-  select(municipal, r3f_inv, r3f_trans, r3f_inv_p) %>% 
+  select(municipal, r3f_inv, r3f_inv_p) %>% 
   distinct()
 
 #joining summary tables
@@ -193,8 +186,8 @@ warren_municipal <- full_join(warren_all, muni_transactions_all, by = 'municipal
   full_join(single_fam, by = 'municipal') %>% 
   full_join(r2f, by = 'municipal') %>% 
   full_join(r3f, by = 'municipal') %>% 
-  #calculing %s
-  mutate(inv_p = inv_trans/trans_0419, #2004 - 2019 investor transactions/total transactions
+  #calculating %s
+  mutate(inv_p = inv_trans_0419/trans_0419, #2004 - 2019 investor transactions/total transactions
          sm_inv_p = sm_inv/inv_trans_0419, #2004 - 2019 small investor transactions/total investor transactions
          med_inv_p = med_inv/inv_trans_0419, #2004 - 2019 medium investor transactions/total investor transactions
          lrg_inv_p = lrg_inv/inv_trans_0419, #2004 - 2019 large investor transactions/total investor transactions
