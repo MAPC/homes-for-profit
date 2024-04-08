@@ -181,7 +181,7 @@ warren_ct20 <- full_join(warren_all, ct_transactions_all, by = 'ct20_id') %>%
          med_inv_p = med_inv/inv_trans_0419, #2004 - 2019 medium investor transactions/total investor transactions
          lrg_inv_p = lrg_inv/inv_trans_0419, #2004 - 2019 large investor transactions/total investor transactions
          inst_inv_p = inst_inv/inv_trans_0419, #2004 - 2019 institutional investor transactions/total investor transactions
-         li_inv = lrg_inv + inst_inv, #2004 - 2019 total large and instututional transactions
+         li_inv = lrg_inv + inst_inv, #2004 - 2019 total large and institutional transactions
          li_inv_p = li_inv/inv_trans_0419, #2004 - 2019 lrg + inst investor transactions/total investor transactions
          llc_inv_p = llc_inv/inv_trans_0023, #2000 - 2023 llc investor transactions/total investor transactions
          val_inv_p = value_inv/inv_trans_0023, #2000 - 2023 value investor transactions/total investor transactions
@@ -199,3 +199,4 @@ write.csv(warren_ct20, 'warren_ct20_agg_2000_2023.csv')
  
 # view(warren_ct20)
 # warren_ct20 %>% colnames()
+
