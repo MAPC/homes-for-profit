@@ -204,7 +204,7 @@ warren_municipal <- full_join(warren_all, muni_transactions_all, by = 'municipal
          llc_inv_p = llc_inv/inv_trans_0023, #2004 - 2019 llc investor transactions/total investor transactions
          val_inv_p = value_inv/inv_trans_0023, #2004 - 2019 value investor transactions/total investor transactions
          c_inv_p = count_inv/inv_trans_0419, #2004 - 2019 count investor transactions/total investor transactions
-         bld_inv_p = build_inv/inv_trans_0023, #2004 - 2023 building investor transactions/total investor transactions
+         bld_inv_p = build_inv/inv_trans_0023, #2000 - 2023 building investor transactions/total investor transactions
          cash_p = cash_trans/trans_0023, #2000 to 2023 cash transactions / total transactions
          flip_p = flip_count/trans_0221 #2002 to 2021 flip transactions / total transactions
   ) %>% 
