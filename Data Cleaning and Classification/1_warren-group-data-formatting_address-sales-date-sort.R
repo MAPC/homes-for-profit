@@ -10,12 +10,8 @@ rm(list=ls())
 pacman::p_load(tidyverse, data.table)
 
 #In Office
-# wd <- "K:/DataServices/Datasets/Housing/Warren Group - Home Sales/Data/Tabular/Modified/"
-# data_path <- 'K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
-
-#Home
-wd <- "S:/Network Shares/K Drive/DataServices/Datasets/Housing/Warren Group - Home Sales/Data/Tabular/Modified/"
-data_path <- 'S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
+wd <- "K:/DataServices/Datasets/Housing/Warren Group - Home Sales/Data/Tabular/Modified/"
+data_path <- 'K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
 
 ### load in data #######
 setwd(wd)
