@@ -5,80 +5,65 @@
 #Note - previously script 6
 
 rm(list=ls())
-#work
-#submarket_path = "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Housing Submarket Typologies/Maps/merged submarkets/"
-#data <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
-
-#home
-submarket_path = "S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Housing Submarket Typologies/Maps/merged submarkets/"
-data <- 'S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
-
-
-#install.packages("pacman")
-pacman::p_load(tidyverse, data.table, bit64, reshape, rgdal, rgeos, assertr, assertthat)
+gc()
+pacman::p_load(tidyverse, data.table, bit64, sf, sp, reshape, assertr, assertthat, udpipe)
 options('scipen' = 10)
 
-### load in data ############
+#data paths
+submarket_path = "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Housing Submarket Typologies/Maps/merged submarkets/"
+data <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
+
+### projections
+lat_lon_CRS <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+mass_mainland<-"+proj=lcc +lat_1=42.68333333333333 +lat_2=41.71666666666667 +lat_0=41 +lon_0=-71.5 +x_0=200000 +y_0=750000 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
 setwd(submarket_path)
-list.files()
-submarket_shp = readOGR(dsn = '.',
-                        layer = "20200109_mapc-housing-submarkets",
-                        stringsAsFactors = F,
-                        encoding = 'latin1')
+
+### load in data ############
+#list.files()
+submarket_shp = st_read("20200109_mapc-housing-submarkets.shp") |> 
+  select(class_reor) 
 
 setwd(data)
-list.files()
+#list.files()
 #changed from fread to csv because data was being lost
-warren = read.csv("20230912_warren_speculative-investment-buyer-sort-analysis-dataset.csv", stringsAsFactors = F)
+warren <- read_csv("20240328_warren_speculative-investment-buyer-sort-analysis-dataset.csv") 
 
-warren = warren %>%
-  filter(complete.cases(latitude))
+warren_id <- warren |> 
+  #create unique ID to join on - when using data inclusive of 2023 on this field should already exist
+  mutate(unique_id = unique_identifier(warren, fields = c(everything(warren))))
 
-submarket_join = function(df, shp){
-
-  crs_new = CRS("+proj=lcc +lat_1=41.71666666666667 +lat_2=42.68333333333333 +lat_0=41 +lon_0=-71.5 +x_0=200000 +y_0=750000
-                +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
-  crs_transform = "+proj=lcc +lat_1=41.71666666666667 +lat_2=42.68333333333333 +lat_0=41 +lon_0=-71.5 +x_0=200000 +y_0=750000
-        +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"
-
-  WCS1984_crs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-
-  proj4string(shp) = crs_new
-  shp <- spTransform(submarket_shp, CRS(crs_transform))
-
-
-  warren_pts = SpatialPoints(data.frame(latitude = df$longitude,
-                                        longitude = df$latitude),
-                             proj4string = CRS(WCS1984_crs))
-
-
-  #reproject the points to NAD83
-  warren_pts <- spTransform(warren_pts, CRS(crs_transform))
-  proj4string(warren_pts)
-
-  #overlay any of the boundaries with the listing records
-  warren_pts_submarket <- over(warren_pts, shp)
-
-  #extract the names from each overlay
-  try (
-    if("class_reor" %in% colnames(warren_pts_submarket))
-      mapc_submarket <- warren_pts_submarket$class_reor
-    else
-      stop("Error! No such variable detected in the submarket shapefile!")
-  )
-
-
-  warren_w_submarket <- cbind(df, mapc_submarket)
-
-  return(warren_w_submarket)
-}
-
-warren_smkt = submarket_join(warren, submarket_shp)
 rm(warren)
+gc()
+
+#making warren data spatial points
+warren_pts <- warren_id |> 
+  select(unique_id, latitude, longitude) |> 
+  #removing any missing latitudes as st_as_sf cannot run if lat or long is missing
+  filter(complete.cases(latitude, longitude)) |> #check how many data points are missing lat/long data
+  st_as_sf(coords = c('longitude', 'latitude'),
+           crs = st_crs(lat_lon_CRS),
+           remove = FALSE) |> 
+  #setting crs to match submarket shapefile
+  st_transform(mass_mainland, crs = st_crs(submarket_shp))
+
+#subsetting points to those within submarket to save time
+warren_pts <- warren_pts[submarket_shp,]
+
+#place warren pts in submarkets
+warren_submarket <- warren_pts |> 
+  st_join(submarket_shp[, 'class_reor']) |> 
+  dplyr::rename(mapc_submarket = class_reor) |> 
+  st_drop_geometry() |> 
+  select(unique_id, mapc_submarket)
+
+#add submarket data back in to full data frame
+warren_submarket_final <- left_join(warren_id, warren_submarket, by = 'unique_id')
+
+########################
 
 # output csv
 setwd(data)
-fwrite(warren_smkt, "20230912_warren_speculative-investment-analysis-dataset-w-submarket.csv")
+fwrite(warren_submarket_final, "20240328_warren_speculative-investment-analysis-dataset-w-submarket.csv")
 
 ########### archive ########
 ##only need 4 year buy horizon
