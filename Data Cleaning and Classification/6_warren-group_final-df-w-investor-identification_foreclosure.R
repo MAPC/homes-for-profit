@@ -6,17 +6,14 @@
 ### Purpose: Identifies investors and the type (small, medium, large, and institutional) of investor
 
 rm(list=ls())
+gc()
 #install.packages("pacman")
 pacman::p_load(tidyverse, data.table, readxl, lubridate)
 options('scipen' = 10)
 
 #Work
-#muni_path <- "K:/DataServices/Datasets/Data Keys"
-#data_path = "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
-
-#home
-muni_path <- "S:/Network Shares/K Drive/DataServices/Datasets/Data Keys"
-data_path <- 'S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
+muni_path <- "K:/DataServices/Datasets/Data Keys"
+data_path = "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
 
 
 ###### load in muni id data keys
@@ -31,7 +28,7 @@ setwd(data_path)
 #list.files()
 
 #change file name here
-warren_df <- read_csv('20230912_warren_speculative-investment-analysis-dataset-w-submarket.csv')
+warren_df <- read_csv('20240328_warren_speculative-investment-analysis-dataset-w-submarket.csv')
 
 ####### INVESTOR DEFINITION #1 -- derived from Allen et al., 2018, "Impact of Investors in Distressed Housing Markets" #######
 # The definition of investor used in this analysis stems from Allen et al., 2018
@@ -107,7 +104,7 @@ rm(warren_df)
 investor_llc <- function(df){
   #Find LLCs and LLPs that have purchased property
   investor_buyers = df %>%
-    filter(buyer_llc_ind == 1 | buyer_llp_ind == 1)
+    filter(buyer1_adj %like% ' LLC' | buyer1_adj %like% ' LLP')
 
   investor_buyer_names = unique(investor_buyers$buyer1_adj)
 
@@ -115,7 +112,7 @@ investor_llc <- function(df){
 
   #find LLCs and LLPs that have sold property
   investor_sellers = df %>%
-    filter(seller_llc_ind == 1 | seller_llp_ind == 1)
+    filter(seller1_adj %like% ' LLC' | seller1_adj %like% ' LLP')
 
   investor_seller_names = unique(investor_sellers$seller1_adj)
 
@@ -268,32 +265,30 @@ gc()
 
 # filter on MAPC region
 warren_df_5yr_final_mapc = warren_df_5yr_final %>%
-  filter(muni_id %in% muni_key$muni_id[muni_key$mapc==1]
-         & mapc_submarket %in% c(1:7)
-         & mapc == 1)
+  filter(mapc == 1)
 
 ######## output csvs
 setwd(data_path)
 
 #with foreclosures all
-fwrite(warren_df_5yr_final, '20230912_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv')
+fwrite(warren_df_5yr_final, '20240328_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv')
 gc()
 
 #with foreclosures - MAPC
-fwrite(warren_df_5yr_final_mapc, '20230912_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window.csv')
+fwrite(warren_df_5yr_final_mapc, '20240328_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window.csv')
 gc()
 
 #without foreclosures all
 warren_df_5yr_final_fd <- warren_df_5yr_final %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_fd, '20230912_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window.csv')
+fwrite(warren_df_5yr_final_fd, '20240328_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window.csv')
 
 #without foreclosures - MAPC
 warren_df_5yr_final_mapc_fd <- warren_df_5yr_final_mapc %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_mapc_fd, '20230912_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window.csv')
+fwrite(warren_df_5yr_final_mapc_fd, '20240328_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window.csv')
 
 ########## archive #########
 #only using 4 year horizon
