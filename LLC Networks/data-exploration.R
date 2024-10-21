@@ -2,7 +2,7 @@
 library(tidyverse)
 
 # Data
-who_owns_path <- "C:/Users/aderosa/OneDrive - Metropolitan Area Planning Council/Shared Documents - Data Services/_Current Projects/_Housing/LLC Owner Networks - NNIP/Data/who-owns-csvs/"
+who_owns_path <- "C:/Users/aderosa/OneDrive - Metropolitan Area Planning Council/Shared Documents - Data Services/_Current Projects/_Housing/LLC Owner Networks - NNIP/04_Data/who-owns-csvs/"
 hfp_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
 
 ## Tables from MIT who-owns analysis
@@ -25,9 +25,9 @@ hfp_wf <- read_csv("20240328_warren_speculative-investment-analysis-dataset_with
 # getting distinct owner list with network id to join
 owners_inst <- owners |> 
   filter(inst == TRUE) |>
-  select(name, cosine_group, network_group) |> 
-  distinct()
+  distinct(name, cosine_group, network_group) 
 
+#check for duplicates
 owners_duplicates <- owners |> 
   filter(inst == TRUE) |> 
   distinct(name, cosine_group, network_group) |> 
@@ -36,19 +36,28 @@ owners_duplicates <- owners |>
   ungroup() |> 
   filter(count > 1)
 
-owners_dup_joined <- owners_duplicates |> 
+owners_joined <- owners_inst |> 
   left_join(owners, by = c("name", "cosine_group", "network_group")) |> 
-  select(-c('count', '...1')) |> 
+  select(-c('...1')) |> 
   left_join(addresses, by = c("addr_id" = "id")) |> 
   select(name, cosine_group, network_group, addr_id, addr, muni, loc_id, inst, trust, trustees)
 
+#join h4p data to institutional owners table
 test <- left_join(hfp_wf, owners_inst, by = c("buyer1_adj" = "name"))
 
 test_view <- test |> 
-  select(address, municipal, buyer1_adj, buyer2_adj, investor_type_purchase, inst, trust, trustees, current_owner, R1F_total)
+  select(address, municipal, buyer1_adj, buyer2_adj, investor_type_purchase, 
+         cosine_group, network_group,
+         #inst, trust, trustees, 
+         current_owner, R1F_total)
 
 
-
+# breakout of investors by type with or without network ids
+test_view |> 
+  mutate(network = ifelse(is.na(network_group), FALSE, TRUE)) |> 
+  group_by(investor_type_purchase, network) |> 
+  count()
+  
 
 
 
