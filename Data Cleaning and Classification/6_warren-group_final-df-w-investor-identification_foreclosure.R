@@ -28,7 +28,7 @@ setwd(data_path)
 #list.files()
 
 #change file name here
-warren_df <- read_csv('20240328_warren_speculative-investment-analysis-dataset-w-submarket.csv')
+warren_df <- read_csv('20241025_warren_speculative-investment-analysis-dataset-w-submarket.csv')
 
 ########## LLC Deduplication ##############
 # loading in metacorp tables resulting from Eric Huntley's analysis here: https://github.com/mit-spatial-action/who-owns-mass-processing
@@ -40,18 +40,20 @@ setwd(data_path)
 # getting distinct list of institutional owners (LLCs, LLPs, and trusts) with network id 
   # see lines 11-22 of the standardizers.R script in Eric Huntley's github repo linked above for
   # the text search used to identify these entities
-owners_inst <- owners_networks |> 
+owners_inst <- owners_networks |>
   filter(inst == TRUE) |>
-  distinct(name, cosine_group, network_group) 
+  distinct(name, cosine_group, network_group)
 rm(owners_networks)
 
 # joining owner table with network-ids to data from script 5 of this analysis
 warren_join <- left_join(warren_df, owners_inst, by = c("buyer1_adj" = "name"))
 rm(warren_df, owners_inst)
-# creating new buyer name field to specify network id for networks and buyer name for non-network buyers
-warren_w_networks <- warren_join |> 
+
+# # creating new buyer name field to specify network id for networks and buyer name for non-network buyers
+warren_w_networks <- warren_join |>
   mutate(final_name = ifelse(is.na(network_group), buyer1_adj, network_group))
 rm(warren_join)
+
 ####### INVESTOR DEFINITION #1 -- derived from Allen et al., 2018, "Impact of Investors in Distressed Housing Markets" #######
 # The definition of investor used in this analysis stems from Allen et al., 2018
 # Whereas that paper focuses specifically on single-family houses, our data will maintain the full Warren Group dataset and simply subset when needed
@@ -123,33 +125,34 @@ rm(warren_w_networks)
 ####### INVESTOR DEFINITION 2 - Small LLCs
   #any purchase made by an LLC will be considered an investor purchase
 
-investor_llc <- function(df){
-  #Find LLCs and LLPs that have purchased property
-  investor_buyers = df %>%
-    filter(final_name %like% ' LLC' | final_name %like% ' LLP')
 
-  investor_buyer_names = unique(investor_buyers$final_name)
-
-  df$investor_type_purchase_llc = ifelse(df$final_name %in% investor_buyer_names, 'Small LLC', 'Non-Small LLC')
-
-  #find LLCs and LLPs that have sold property
-  investor_sellers = df %>%
-    filter(seller1_adj %like% ' LLC' | seller1_adj %like% ' LLP')
-
-  investor_seller_names = unique(investor_sellers$seller1_adj)
-
-  df$investor_type_sale_llc = ifelse(df$seller1_adj %in% investor_seller_names, 'Small LLC', 'Non-Small LLC')
-
-  # replace NAs in flip-term column with 'Non-flip'
-  df$flip_term[is.na(df$flip_term)] = "Non-flip"
-
-  return(df)
-}
-
-#warren_df_4yr_count_llc <- investor_llc(warren_df_4yr_count)
-warren_df_5yr_count_llc <- investor_llc(warren_df_5yr_count)
-#warren_df_6yr_count_llc <- investor_llc(warren_df_6yr_count)
-rm(warren_df_5yr_count)
+# investor_llc <- function(df){
+#   #Find LLCs and LLPs that have purchased property
+#   investor_buyers = df %>%
+#     filter(final_name %like% ' LLC' | final_name %like% ' LLP')
+# 
+#   investor_buyer_names = unique(investor_buyers$final_name)
+# 
+#   df$investor_type_purchase_llc = ifelse(df$final_name %in% investor_buyer_names, 'Small LLC', 'Non-Small LLC')
+# 
+#   #find LLCs and LLPs that have sold property
+#   investor_sellers = df %>%
+#     filter(seller1_adj %like% ' LLC' | seller1_adj %like% ' LLP')
+# 
+#   investor_seller_names = unique(investor_sellers$seller1_adj)
+# 
+#   df$investor_type_sale_llc = ifelse(df$seller1_adj %in% investor_seller_names, 'Small LLC', 'Non-Small LLC')
+# 
+#   # replace NAs in flip-term column with 'Non-flip'
+#   df$flip_term[is.na(df$flip_term)] = "Non-flip"
+# 
+#   return(df)
+# }
+# 
+# #warren_df_4yr_count_llc <- investor_llc(warren_df_4yr_count)
+# warren_df_5yr_count_llc <- investor_llc(warren_df_5yr_count)
+# #warren_df_6yr_count_llc <- investor_llc(warren_df_6yr_count)
+# rm(warren_df_5yr_count)
 
 ####### INVESTOR DEFINITION #3 -- based on size of building purchased #######
 investor_building <- function(df){
@@ -170,9 +173,9 @@ investor_building <- function(df){
 }
 
 #warren_df_4yr_count_llc_build = investor_building(warren_df_4yr_count_llc)
-warren_df_5yr_count_llc_build = investor_building(warren_df_5yr_count_llc)
+warren_df_5yr_count_llc_build = investor_building(warren_df_5yr_count)
 #warren_df_6yr_count_llc_build = investor_building(warren_df_6yr_count_llc)
-rm(warren_df_5yr_count_llc)
+rm(warren_df_5yr_count)
 
 ####### INVESTOR DEFINITION #4 -- based on total purchase value of buyer's transactions over entire time window #######
 
@@ -293,24 +296,24 @@ warren_df_5yr_final_mapc = warren_df_5yr_final %>%
 setwd(data_path)
 
 #with foreclosures all
-fwrite(warren_df_5yr_final, '20241021_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final, '20241025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv')
 gc()
 
 #with foreclosures - MAPC
-fwrite(warren_df_5yr_final_mapc, '20241021_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final_mapc, '20241025_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window.csv')
 gc()
 
 #without foreclosures all
 warren_df_5yr_final_fd <- warren_df_5yr_final %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_fd, '20241021_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final_fd, '20241025_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window.csv')
 
 #without foreclosures - MAPC
 warren_df_5yr_final_mapc_fd <- warren_df_5yr_final_mapc %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_mapc_fd, '20241021_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final_mapc_fd, '20241025_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window.csv')
 
 ########## archive #########
 #only using 4 year horizon
