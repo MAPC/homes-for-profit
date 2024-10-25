@@ -1,5 +1,5 @@
 ### Warren Group Data Sort for address and transaction date (in order to identify flips)
-### Author: Taylor Perez (modified by Seleeke Flingai, 02/17/2020) (modified by Alexa DeRosa, 01/31/2023)
+### Author: Taylor Perez (modified by Seleeke Flingai, 02/17/2020) (modified by Alexa DeRosa, 01/31/2023. 10/24/2024)
 ### Date: 11/12/2019 (Taylor Perez)
 ### Purpose: Sorts the data by address and transaction date in order to ready the dataset for flip identification
 
@@ -9,19 +9,15 @@ rm(list=ls())
 #install.packages("pacman")
 pacman::p_load(tidyverse, data.table)
 
-#In Office
-# wd <- "K:/DataServices/Datasets/Housing/Warren Group - Home Sales/Data/Tabular/Modified/"
-# data_path <- 'K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
-
-#Home
-wd <- "S:/Network Shares/K Drive/DataServices/Datasets/Housing/Warren Group - Home Sales/Data/Tabular/Modified/"
-data_path <- 'S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
+# Data Paths
+wd <- "K:/DataServices/Datasets/Housing/Warren Group - Home Sales/Data/Tabular/Modified/"
+data_path <- 'K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
 
 ### load in data #######
 setwd(wd)
 list.files()
 #change file name here
-warren <- fread("20230126_warren_group_2000_2022_residential_final.csv",
+warren <- fread("20240314_warren_group_2000_2023_residential_final.csv",
                 header=TRUE,
                 stringsAsFactors=FALSE,
                 colClasses=c('ct_id'='character'))
@@ -47,8 +43,8 @@ warren_df_sort <- warren_df[order(warren_df$address, warren_df$municipal, warren
 ### reorder dataframe
 warren_df_final <- warren_df_sort %>%
   dplyr::select(ct_id, ct20_id, censustrct, muni_id, county_id, date, month, year, address, street, municipal,
-                county, state, zipcode, price, mortgage, mortgage2, buyer1, buyer2, seller1, seller2, proptype,
-                everything())
+                county, state, zipcode, price, price_adj,mortgage, mortgage2, buyer1, buyer2, seller1, seller2, 
+                proptype, everything())
 
 ### write sorted output for analysis
 fwrite(warren_df_final,
