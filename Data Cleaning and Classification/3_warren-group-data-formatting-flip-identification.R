@@ -5,11 +5,9 @@
 
 rm(list=ls())
 #.libPaths("H:/Data/RLibrary")
-#work
-#data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
 
-#home
-data_path <- 'S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
+# data paths
+data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
 
 #install.packages("pacman")
 pacman::p_load(tidyverse, data.table, bit64, readxl, reshape)
@@ -21,42 +19,41 @@ warren <- fread("20230912_warren_speculative-investment-analysis-dataset_adjuste
                 header=TRUE,
                 stringsAsFactors=FALSE,
                 colClasses=c('ct_id'='character')) %>%
-  dplyr::select(ct_id, ct20_id, zipcode, muni_id, mapc, latitude, longitude, date, month, year, address, street, municipal, proptype, restype,
-                price, mortgage, mortgage2, buyer1_adj, buyer2_adj, seller1_adj, seller2_adj,
+  dplyr::select(ct_id, ct20_id, zipcode, muni_id, mapc, latitude, longitude, date, month, year, address, street, 
+                municipal, proptype, restype, price, price_adj, mortgage, mortgage2, buyer1_adj, buyer2_adj, seller1_adj, seller2_adj,
                 deedtype, cash_sale, yearbuilt, lotsize, intersf, totrooms, bathrooms, bedrooms, buyer1, buyer2, seller1, seller2)
 
-#change file name to reflect most recent year (only do this if the new file has complete data for the most recent year)
-cpi_index <- read_excel(#'K:/DataServices/Datasets/Economy/BLS - Consumer Price Index/Output/CPI_BostonMSA_1993-2022.xlsx',
-                        'S:/Network Shares/K Drive/DataServices/Datasets/Economy/BLS - Consumer Price Index/Output/CPI_BostonMSA_1993-2022.xlsx',
-                        sheet = 'Data') %>%
-  dplyr::select(Year, Avg.)
+# MAPC runs the price adjustment process below as part of our pre-processing of the warren data
 
-cpi_index <- cpi_index %>%
-  mutate(year = as.integer(Year)) %>%
-  select(year, Avg.)
+# #change file name to reflect most recent year (only do this if the new file has complete data for the most recent year)
+# cpi_index <- read_excel('K:/DataServices/Datasets/Economy/BLS - Consumer Price Index/Output/CPI_BostonMSA_1993-2023.xlsx',
+#                           sheet = 'Data') %>%
+#   dplyr::select(Year, Avg.)
+# 
+# cpi_index <- cpi_index %>%
+#   mutate(year = as.integer(Year)) %>%
+#   select(year, Avg.)
+# 
+# #variable for most recent year
+# recent_year <- cpi_index %>%
+#   pull(year) %>%
+#   tail(n=1)
+# 
+# #variable to take Avg. from last row (most recent year) from the cpi_index
+# inflation_adj <- cpi_index %>%
+#   pull(Avg.) %>%
+#   tail(n=1)
+#  
+# # adjust sales price for inflation to US dollars in most recent year
+# warren_temp <- left_join(warren, cpi_index)
+# 
+# 
+# warren_price_adj <- warren_temp %>%
+#   mutate(price_adj = ifelse(year != recent_year, # if not the most recent year
+#                              price * (inflation_adj / Avg.), # adjust the prices upwards
+#                              price)) # otherwise keep the most recent year $ price
 
-#variable for most recent year
-recent_year <- cpi_index %>%
-  pull(year) %>%
-  tail(n=1)
-
-#variable to take Avg. from last row (most recent year) from the cpi_index
-inflation_adj <- cpi_index %>%
-  pull(Avg.) %>%
-  tail(n=1)
-
-## there was a line setting warren <- distinct(warren) but there were the same number of rows before and after and distinct broke the .IDate format
-
-# adjust sales price for inflation to US dollars in most recent year
-warren_temp <- left_join(warren, cpi_index)
-
-
-warren_price_adj <- warren_temp %>%
-  mutate(price_adj = ifelse(year != recent_year, # if not the most recent year
-                             price * (inflation_adj / Avg.), # adjust the prices upwards
-                             price)) # otherwise keep the most recent year $ price
-
-warren_buyer_seller_id = warren_price_adj %>%
+warren_buyer_seller_id = warren %>%
   mutate(buyer_llc_ind = ifelse(buyer1_adj %like% 'LLC' | buyer2_adj %like% 'LLC',
                                 1,
                                 0),
@@ -254,7 +251,7 @@ warren_detailed_final$flip_term = ifelse(warren_detailed_final$month_horizon %in
 ### output files ############
 setwd(data_path)
 # file name should match input file name with _detailed added
-fwrite(warren_detailed_final, '20230912_warren_speculative-investment-analysis-dataset_adjusted_detailed.csv')
+fwrite(warren_detailed_final, '20241025_warren_speculative-investment-analysis-dataset_adjusted_detailed.csv')
 
 ####Archive - Don't need to run
 #warren$date <- as.Date(warren$date) (in adjust data and price variable section)
