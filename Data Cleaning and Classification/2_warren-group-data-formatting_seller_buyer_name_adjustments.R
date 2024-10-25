@@ -8,17 +8,13 @@ rm(list=ls())
 pacman::p_load(tidyverse, data.table, bit64)
 
 #work
-#data_path = "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data"
-
-#home
-data_path <- 'S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
-
+data_path = "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data"
 
 setwd(data_path)
 list.files()
 
 #change file name here
-warren_df = fread("20230912_warren_speculative-investment-analysis-dataset.csv", stringsAsFactors = F, encoding = "Latin-1")
+warren_df = fread("20240328_warren_speculative-investment-analysis-dataset.csv", stringsAsFactors = F, encoding = "Latin-1")
 
 warren_temp = warren_df
 
@@ -338,4 +334,4 @@ warren_adj = warren_temp %>%
 
 rm(warren_df, warren_temp, warren_adj)
 #change file name here (same as input file but add _adjusted)
-fwrite(warren_adj_final, "20230912_warren_speculative-investment-analysis-dataset_adjusted.csv")
+fwrite(warren_adj_final, "20240328_warren_speculative-investment-analysis-dataset_adjusted.csv")

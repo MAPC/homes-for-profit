@@ -1,22 +1,19 @@
 ### Warren Group Investor Identification
-### Author: Seleeke Flingai
-### Updated by: Sarah Philbrick
-### Last update date: 05/10/21
-### Date: 02/03/2020
+### Authors: Seleeke Flingai, Sarah Philbrick
+### Updated by: Alexa DeRosa
+### Last update date: 02/03/2020
+### Date: 10/21/2024
 ### Purpose: Identifies investors and the type (small, medium, large, and institutional) of investor
 
 rm(list=ls())
+gc()
 #install.packages("pacman")
 pacman::p_load(tidyverse, data.table, readxl, lubridate)
 options('scipen' = 10)
 
 #Work
-#muni_path <- "K:/DataServices/Datasets/Data Keys"
-#data_path = "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
-
-#home
-muni_path <- "S:/Network Shares/K Drive/DataServices/Datasets/Data Keys"
-data_path <- 'S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
+muni_path <- "K:/DataServices/Datasets/Data Keys"
+data_path = "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
 
 
 ###### load in muni id data keys
@@ -31,8 +28,30 @@ setwd(data_path)
 #list.files()
 
 #change file name here
-warren_df <- read_csv('20230912_warren_speculative-investment-analysis-dataset-w-submarket.csv')
+warren_df <- read_csv('20240328_warren_speculative-investment-analysis-dataset-w-submarket.csv')
 
+########## LLC Deduplication ##############
+# loading in metacorp tables resulting from Eric Huntley's analysis here: https://github.com/mit-spatial-action/who-owns-mass-processing
+who_owns_path <- "C:/Users/aderosa/OneDrive - Metropolitan Area Planning Council/Shared Documents - Data Services/_Current Projects/_Housing/LLC Owner Networks - NNIP/04_Data/who-owns-csvs/"
+setwd(who_owns_path)
+owners_networks <- read_csv("owners.csv")
+setwd(data_path)
+
+# getting distinct list of institutional owners (LLCs, LLPs, and trusts) with network id 
+  # see lines 11-22 of the standardizers.R script in Eric Huntley's github repo linked above for
+  # the text search used to identify these entities
+owners_inst <- owners_networks |> 
+  filter(inst == TRUE) |>
+  distinct(name, cosine_group, network_group) 
+rm(owners_networks)
+
+# joining owner table with network-ids to data from script 5 of this analysis
+warren_join <- left_join(warren_df, owners_inst, by = c("buyer1_adj" = "name"))
+rm(warren_df, owners_inst)
+# creating new buyer name field to specify network id for networks and buyer name for non-network buyers
+warren_w_networks <- warren_join |> 
+  mutate(final_name = ifelse(is.na(network_group), buyer1_adj, network_group))
+rm(warren_join)
 ####### INVESTOR DEFINITION #1 -- derived from Allen et al., 2018, "Impact of Investors in Distressed Housing Markets" #######
 # The definition of investor used in this analysis stems from Allen et al., 2018
 # Whereas that paper focuses specifically on single-family houses, our data will maintain the full Warren Group dataset and simply subset when needed
@@ -51,7 +70,7 @@ investor_count <- function(df, horizon_years){
   df$buy_horizon <- df$date + years(horizon_years)
 
   temp = df %>%
-    group_by(buyer1_adj) %>%
+    group_by(final_name) %>%
     mutate(prop_count = n()) %>%
     #limit to only buyers that have made at least 3 purchases over entire data period
     filter(prop_count >= 3) %>%
@@ -64,7 +83,7 @@ investor_count <- function(df, horizon_years){
     filter(prop_count_horizon_window >= 3)
 
   counts = investor %>%
-    group_by(buyer1_adj) %>%
+    group_by(final_name) %>%
     mutate(max_prop_count = max(prop_count_horizon_window)) %>%
     ungroup() %>%  # new
     mutate(
@@ -74,16 +93,16 @@ investor_count <- function(df, horizon_years){
                                                           ifelse(max_prop_count == 3, "Small", "Non-count investor"))))
     )
 
-  small_investor_names = filter(counts, investor_purchase_count == "Small") %>% select(buyer1_adj) %>% unique() %>% pull(buyer1_adj)
-  med_investor_names = filter(counts, investor_purchase_count == "Medium") %>% select(buyer1_adj) %>% unique() %>% pull(buyer1_adj)
-  large_investor_names = filter(counts, investor_purchase_count == "Large") %>% select(buyer1_adj) %>% unique() %>% pull(buyer1_adj)
-  institutional_investor_names = filter(counts, investor_purchase_count == "Institutional") %>% select(buyer1_adj) %>% unique() %>% pull(buyer1_adj)
+  small_investor_names = filter(counts, investor_purchase_count == "Small") %>% select(final_name) %>% unique() %>% pull(final_name)
+  med_investor_names = filter(counts, investor_purchase_count == "Medium") %>% select(final_name) %>% unique() %>% pull(final_name)
+  large_investor_names = filter(counts, investor_purchase_count == "Large") %>% select(final_name) %>% unique() %>% pull(final_name)
+  institutional_investor_names = filter(counts, investor_purchase_count == "Institutional") %>% select(final_name) %>% unique() %>% pull(final_name)
 
   #categorical variable that categorizes a BUYER as a small, medium, large, or institutional investor
-  df$investor_type_purchase_count = ifelse(df$buyer1_adj %in% small_investor_names, 'Small',
-                                           ifelse(df$buyer1_adj %in% med_investor_names, 'Medium',
-                                                  ifelse(df$buyer1_adj %in% large_investor_names, 'Large',
-                                                         ifelse(df$buyer1_adj %in% institutional_investor_names, 'Institutional', 'Non-count investor'))))
+  df$investor_type_purchase_count = ifelse(df$final_name %in% small_investor_names, 'Small',
+                                           ifelse(df$final_name %in% med_investor_names, 'Medium',
+                                                  ifelse(df$final_name %in% large_investor_names, 'Large',
+                                                         ifelse(df$final_name %in% institutional_investor_names, 'Institutional', 'Non-count investor'))))
   # create a categorical variable that categorizes a SELLER as a small, medium, large, or institutional investor
   df$investor_type_sale_count = ifelse(df$seller1_adj %in% small_investor_names, 'Small',
                                        ifelse(df$seller1_adj %in% med_investor_names, 'Medium',
@@ -97,9 +116,9 @@ investor_count <- function(df, horizon_years){
 }
 
 #warren_df_4yr_count <- investor_count(warren_df, 4)
-warren_df_5yr_count <- investor_count(warren_df, 5)
+warren_df_5yr_count <- investor_count(warren_w_networks, 5)
 #warren_df_6yr_count <- investor_count(warren_df, 6)
-rm(warren_df)
+rm(warren_w_networks)
 
 ####### INVESTOR DEFINITION 2 - Small LLCs
   #any purchase made by an LLC will be considered an investor purchase
@@ -107,15 +126,15 @@ rm(warren_df)
 investor_llc <- function(df){
   #Find LLCs and LLPs that have purchased property
   investor_buyers = df %>%
-    filter(buyer_llc_ind == 1 | buyer_llp_ind == 1)
+    filter(final_name %like% ' LLC' | final_name %like% ' LLP')
 
-  investor_buyer_names = unique(investor_buyers$buyer1_adj)
+  investor_buyer_names = unique(investor_buyers$final_name)
 
-  df$investor_type_purchase_llc = ifelse(df$buyer1_adj %in% investor_buyer_names, 'Small LLC', 'Non-Small LLC')
+  df$investor_type_purchase_llc = ifelse(df$final_name %in% investor_buyer_names, 'Small LLC', 'Non-Small LLC')
 
   #find LLCs and LLPs that have sold property
   investor_sellers = df %>%
-    filter(seller_llc_ind == 1 | seller_llp_ind == 1)
+    filter(seller1_adj %like% ' LLC' | seller1_adj %like% ' LLP')
 
   investor_seller_names = unique(investor_sellers$seller1_adj)
 
@@ -137,10 +156,10 @@ investor_building <- function(df){
   investor <- df %>%
     filter(restype=='APT' | restype=='MUR'| restype=='REO')
 
-  investor_buyer_names = unique(investor$buyer1_adj)
+  investor_buyer_names = unique(investor$final_name)
   investor_seller_names = unique(investor$seller1_adj)
 
-  df$investor_type_purchase_building = ifelse(df$buyer1_adj %in% investor_buyer_names, 'Building Investor', 'Non-building investor')
+  df$investor_type_purchase_building = ifelse(df$final_name %in% investor_buyer_names, 'Building Investor', 'Non-building investor')
 
   df$investor_type_sale_building = ifelse(df$seller1_adj %in% investor_seller_names,'Building Investor', 'Non-building investor')
 
@@ -161,7 +180,7 @@ investor_value <- function(df){
   total_years <- (max(df$year) - min(df$year)) + 1
 
   warren_purchases_by_buyer = df %>%
-    group_by(buyer1_adj) %>%
+    group_by(final_name) %>%
     mutate(
       #total_value = sum(price_adj),
       avg_annual_value = sum(price_adj)/total_years
@@ -200,7 +219,7 @@ owners <- warren_df_5yr_count_llc_build_value %>%
   slice_max(date) %>%
   ungroup() %>%
   mutate(current_owner = 1) %>%
-  select(buyer1_adj, address, municipal, date, current_owner)
+  select(final_name, buyer1_adj, address, municipal, date, current_owner)
 
 #create unique ID columns to compare dfs
 owners$ID <- paste(owners$buyer1_adj, owners$address, owners$municipal, owners$date)
@@ -214,7 +233,7 @@ warren_df_5yr_count_llc_build_value_clean <- warren_df_5yr_count_llc_build_value
     #index to identify R1F properties
     restype_R1F = ifelse(restype == "R1F", 1, 0)
     ) %>%
-  group_by(buyer1_adj) %>%
+  group_by(final_name) %>%
   mutate(
     #calculate the total number of properties owned by each buyer
     tot_owned = sum(current_owner),
@@ -268,32 +287,30 @@ gc()
 
 # filter on MAPC region
 warren_df_5yr_final_mapc = warren_df_5yr_final %>%
-  filter(muni_id %in% muni_key$muni_id[muni_key$mapc==1]
-         & mapc_submarket %in% c(1:7)
-         & mapc == 1)
+  filter(mapc == 1)
 
 ######## output csvs
 setwd(data_path)
 
 #with foreclosures all
-fwrite(warren_df_5yr_final, '20230912_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv')
+fwrite(warren_df_5yr_final, '20241021_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv')
 gc()
 
 #with foreclosures - MAPC
-fwrite(warren_df_5yr_final_mapc, '20230912_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window.csv')
+fwrite(warren_df_5yr_final_mapc, '20241021_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv')
 gc()
 
 #without foreclosures all
 warren_df_5yr_final_fd <- warren_df_5yr_final %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_fd, '20230912_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window.csv')
+fwrite(warren_df_5yr_final_fd, '20241021_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window-networks.csv')
 
 #without foreclosures - MAPC
 warren_df_5yr_final_mapc_fd <- warren_df_5yr_final_mapc %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_mapc_fd, '20230912_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window.csv')
+fwrite(warren_df_5yr_final_mapc_fd, '20241021_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window-networks.csv')
 
 ########## archive #########
 #only using 4 year horizon

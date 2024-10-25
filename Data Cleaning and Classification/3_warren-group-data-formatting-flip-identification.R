@@ -4,6 +4,7 @@
 ### Purpose: Identifies home flips and characteristics of the buyers, sellers, and sale itself (including price difference).
 
 rm(list=ls())
+gc()
 #.libPaths("H:/Data/RLibrary")
 
 # data paths
@@ -15,7 +16,7 @@ options('scipen' = 10)
 
 ### load in data ############
 setwd(data_path)
-warren <- fread("20230912_warren_speculative-investment-analysis-dataset_adjusted.csv",
+warren <- fread("20240328_warren_speculative-investment-analysis-dataset_adjusted.csv",
                 header=TRUE,
                 stringsAsFactors=FALSE,
                 colClasses=c('ct_id'='character')) %>%
@@ -57,7 +58,7 @@ warren_buyer_seller_id = warren %>%
   mutate(buyer_llc_ind = ifelse(buyer1_adj %like% 'LLC' | buyer2_adj %like% 'LLC',
                                 1,
                                 0),
-         buyer_llp_ind = ifelse(buyer1_adj %like% ' LLP ' | buyer2_adj %like% ' LLP ',
+         buyer_llp_ind = ifelse(buyer1_adj %like% ' LLP' | buyer2_adj %like% ' LLP ',
                                 1,
                                 0),
          buyer_bus_ind = ifelse(buyer1_adj %like% ' INC'

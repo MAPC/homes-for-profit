@@ -5,20 +5,18 @@
 # this analysis will help separate regular property purchases from investors, who we are assuming purchase property more regularly than non-investors
 
 rm(list=ls())
+gc()
 # .libPaths("H:/Data/RLibrary")
 #install.packages("pacman")
 pacman::p_load(tidyverse, data.table, bit64)
 
 #office
-#data_path <- 'K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
-
-#home
-data_path <- 'S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
+data_path <- 'K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
 
 ### load in data #########
 setwd(data_path)
 list.files()
-warren <- fread("20230912_warren_speculative-investment-analysis-dataset_adjusted_detailed.csv", stringsAsFactors=FALSE,
+warren <- fread("20240328_warren_speculative-investment-analysis-dataset_adjusted_detailed.csv", stringsAsFactors=FALSE,
                    colClasses=c('ct_id'='character')) # load in raw data
 
 ### sort dataframe by buyer1 & date
@@ -30,4 +28,4 @@ warren_sort$date <- as.Date(warren_sort$date)
 warren_distinct <- distinct(warren_sort)
 
 ### write sorted output for analysis
-fwrite(warren_distinct, '20230912_warren_speculative-investment-buyer-sort-analysis-dataset.csv')
+fwrite(warren_distinct, '20240328_warren_speculative-investment-buyer-sort-analysis-dataset.csv')
