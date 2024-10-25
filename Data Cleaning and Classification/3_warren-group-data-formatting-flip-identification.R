@@ -16,7 +16,7 @@ options('scipen' = 10)
 
 ### load in data ############
 setwd(data_path)
-warren <- fread("20240328_warren_speculative-investment-analysis-dataset_adjusted.csv",
+warren <- fread("20241025_warren_speculative-investment-analysis-dataset_adjusted.csv",
                 header=TRUE,
                 stringsAsFactors=FALSE,
                 colClasses=c('ct_id'='character')) %>%

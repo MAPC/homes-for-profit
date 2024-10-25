@@ -2,28 +2,24 @@
 library(tidyverse)
 library(sf)
 
-#Office
+#Data Paths
 
-# data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
-# export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/"
-
-#Home
-data_path <- "S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
-export_path <- "S:/Network Shares/K Drive/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/"
+data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
+export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/_2000-2023"
 
 setwd(data_path)
 
 #Data - 5yr window
-warren <- read_csv("20230912_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv") %>%
+warren <- read_csv("20241025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv") %>%
    mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
           total_transactions = n())
-warren_noforeclosures <- read_csv("20230912_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window.csv") %>%
+warren_noforeclosures <- read_csv("20241025_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window.csv") %>%
    mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
           total_transactions = n())
-warren_mapc <- read_csv("20230912_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window.csv") %>%
+warren_mapc <- read_csv("20241025_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window.csv") %>%
   mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
          total_transactions = n())
-warren_mapc_noforeclosures <- read_csv("20230912_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window.csv") %>%
+warren_mapc_noforeclosures <- read_csv("20241025_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window.csv") %>%
   mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
          total_transactions = n())
 
@@ -278,39 +274,6 @@ figure_5 <- rbind(by_restype, all_restype) %>%
 figure_5
 write.csv(figure_5, "figure_5.csv")
 rm(by_restype, all_restype, figure_5)
-
-################ 2 family dip ##################
-#transactions by year
-count(warren_mapc_noforeclosures, year) %>% print(n=25)
-  #there is a significant increase in the number of transactions a year from 2010 to 2011 - did something change with how data was collected?
-count(warren_mapc, year) %>% print(n=25)
-count(warren_mapc)
-count(w)
-warren_mapc_noforeclosures %>% count(deedtype) %>% print(n=50)
-warren_mapc %>% count(deedtype) %>% print(n=50)
-#by year by restype
-warren_mapc_noforeclosures %>% 
-  group_by(restype) %>% 
-  count(year) %>% 
-  pivot_wider(names_from = 'restype', values_from = 'n') %>% 
-  print(n=25)
-
-warren_mapc %>% 
-  group_by(restype) %>% 
-  count(year) %>% 
-  pivot_wider(names_from = 'restype', values_from = 'n') %>% 
-  print(n=25)
-
-warren_mapc %>% filter(deedtype != 'FD' %>% replace_na(FALSE)) %>% count(deedtype) %>% print(n=50)
-
-
-warren_mapc_noforeclosures %>% filter(is.na(deedtype))
-warren_mapc %>% filter(is.na(deedtype)) %>% select(address, zipcode, muni_id, mapc, date, proptype, restype, price, deedtype)
-
-warren_mapc_noforeclosures %>% filter(address == "56 N HILL AVE") %>% 
-  select(address, zipcode, muni_id, mapc, date, proptype, restype, price, deedtype)
-?pivot_wider()
-##############################
 
 #Figure 6: Investor Purchases by Investor Size as a Share of All Transactions
 figure_6 <- warren_mapc %>%
