@@ -5,7 +5,7 @@ library(sf)
 #Data Paths
 
 data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
-export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/_2000-2023"
+export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/_2000-2023/MIT tables without property managers/"
 
 setwd(data_path)
 
@@ -49,13 +49,13 @@ table <- warren_mapc %>%
   arrange(investor_type_purchase, restype) %>%
   distinct()
 
-table %>%
-  select(investor_type_purchase, restype, count) %>%
-  pivot_wider(names_from = 'restype', values_from = 'count')
-
-table %>%
-  select(investor_type_purchase, restype, percent) %>%
-  pivot_wider(names_from = 'restype', values_from = 'percent')
+# table %>%
+#   select(investor_type_purchase, restype, count) %>%
+#   pivot_wider(names_from = 'restype', values_from = 'count')
+# 
+# table %>%
+#   select(investor_type_purchase, restype, percent) %>%
+#   pivot_wider(names_from = 'restype', values_from = 'percent')
 
 #Table 1: Warren Group Real Estate Transactions by Residential Type, MAPC Region
 table_1 <- warren_mapc %>%
@@ -70,7 +70,7 @@ table_1 <- warren_mapc %>%
   ) %>%
   distinct()
 
-table_1
+#table_1
 write.csv(table_1, "table_1.csv")
 rm(table_1)
 
@@ -88,7 +88,7 @@ table_2 <- warren_mapc %>%
           transactions_p = transactions/total_investor) %>%
   distinct()
 
-table_2
+#table_2
 write.csv(table_2, "table_2.csv")
 rm(table_2)
 
@@ -104,7 +104,7 @@ figure_1 <- warren_mapc %>%
   distinct() %>%
   pivot_wider(names_from = year, values_from = transactions)
 
-figure_1
+#figure_1
 write.csv(figure_1, "figure_1.csv")
 rm(figure_1)
 
@@ -124,7 +124,7 @@ figure_2 <- warren_mapc %>%
   arrange(year) %>%
   distinct()
 
-figure_2
+#figure_2
 write.csv(figure_2, "figure_2.csv")
 rm(figure_2)
 
@@ -142,7 +142,7 @@ figure_3 <- warren_mapc %>%
   arrange(year) %>%
   distinct()
 
-figure_3 %>% print(n=25)
+#figure_3 %>% print(n=25)
 write.csv(figure_3, "figure_3.csv")
 rm(figure_3)
 
@@ -160,7 +160,7 @@ investor_p <- warren_mapc %>%
   select(investor_transactions_p) %>%
   distinct()
 
-investor_p
+#investor_p
 
 investor_p_4yrs <- warren_mapc %>%
   #filter to investor years
@@ -175,7 +175,7 @@ investor_p_4yrs <- warren_mapc %>%
   select(investor_transactions_p) %>%
   distinct()
 
-investor_p_4yrs
+#investor_p_4yrs
 #write.csv(investor_p, "")
 rm(investor_p, investor_p_4yrs)
 
@@ -215,7 +215,7 @@ figure_4 <- rbind(by_restype, all_restype) %>%
   arrange(year) %>%
   pivot_wider(names_from = 'year', values_from = 'investor_transactions_p')
 
-figure_4
+#figure_4
 write.csv(figure_4, "figure_4.csv")
 rm(by_restype, all_restype, figure_4)
 
@@ -232,7 +232,7 @@ warren_mapc %>%
   distinct() %>% 
   arrange(year) %>% 
   view()
-?round()
+
 #Figure 5: Investor Purchases by Residential Building Type and Year, Excluding Foreclosures
 by_restype <- warren_mapc_noforeclosures %>%
   #filter to investor years
@@ -293,7 +293,7 @@ figure_6 <- warren_mapc %>%
   distinct() %>%
   pivot_wider(names_from = 'year', values_from = 'transactions_p')
 
-figure_6
+#figure_6
 write.csv(figure_6, "figure_6.csv")
 rm(figure_6)
 
@@ -316,7 +316,7 @@ figure_7 <- warren_mapc %>%
   distinct() %>%
   pivot_wider(names_from = 'investor', values_from = 'sales_p')
 
-figure_7
+#figure_7
 write.csv(figure_7, "figure_7.csv")
 rm(figure_7)
 
@@ -332,7 +332,7 @@ figure_8 <- warren_mapc %>%
   ) %>%
   pivot_wider(names_from = 'year', values_from = 'median_sales')
 
-figure_8
+#figure_8
 write.csv(figure_8, "figure_8.csv")
 rm(figure_8)
 
@@ -348,7 +348,7 @@ figure_9 <- warren_mapc %>%
   ) %>%
   pivot_wider(names_from = 'year', values_from = 'median_sales')
 
-figure_9
+#figure_9
 write.csv(figure_9, "figure_9.csv")
 rm(figure_9)
 
@@ -364,7 +364,7 @@ figure_9_1 <- warren_mapc %>%
   ) %>%
   pivot_wider(names_from = 'year', values_from = 'median_sales')
 
-figure_9_1
+#figure_9_1
 write.csv(figure_9_1, "figure_9.1.csv")
 rm(figure_9_1)
 
@@ -380,7 +380,7 @@ figure_10 <- warren_mapc %>%
   ) %>%
   pivot_wider(names_from = 'year', values_from = 'median_sales')
 
-figure_10
+#figure_10
 write.csv(figure_10, "figure_10.csv")
 rm(figure_10)
 
@@ -402,7 +402,7 @@ figure_11 <- warren_mapc %>%
   distinct() %>%
   arrange(mapc_submarket)
 
-figure_11
+#figure_11
 write.csv(figure_11, "figure_11.csv")
 rm(figure_11)
 
@@ -425,7 +425,7 @@ figure_12 <- warren_mapc %>%
   arrange(mapc_submarket, year) %>%
   pivot_wider(names_from = 'year', values_from = 'submarket_p')
 
-figure_12
+#figure_12
 write.csv(figure_12, "figure_12.csv")
 rm(figure_12)
 
@@ -462,7 +462,7 @@ table_3_total <-  warren_mapc %>%
 
 table_3 <- rbind(table_3_restype, table_3_total)
 
-table_3
+#table_3
 write.csv(table_3, "table_3.csv")
 rm(table_3)
 
@@ -496,7 +496,7 @@ figure_13 <- warren_mapc_noforeclosures  %>%
   arrange(year) %>%
   distinct()
 
-figure_13
+#figure_13
 write.csv(figure_13, "figure_13.csv")
 rm(figure_13)
 
@@ -519,7 +519,7 @@ figure_14 <- warren_mapc_noforeclosures %>%
   arrange(year) %>%
   pivot_wider(names_from = 'year', values_from = 'flip_p')
 
-figure_14
+#figure_14
 write.csv(figure_14, "figure_14.csv")
 rm(figure_14)
 
@@ -542,7 +542,7 @@ figure_15 <- warren_mapc_noforeclosures %>%
   distinct() %>%
   pivot_wider(names_from = 'restype', values_from = 'flip_p')
 
-figure_15
+#figure_15
 write.csv(figure_15, "figure_15.csv")
 rm(figure_15)
 
@@ -562,7 +562,7 @@ figure_16 <- warren_mapc_noforeclosures %>%
   arrange(mapc_submarket) %>%
   distinct()
 
-figure_16
+#figure_16
 write.csv(figure_16, "figure_16.csv")
 rm(figure_16)
 
@@ -575,7 +575,7 @@ figure_17 <- warren_mapc_noforeclosures %>%
   summarize(median_sales = median(price_adj)) %>%
   pivot_wider(names_from = 'year', values_from = 'median_sales')
 
-figure_17
+#figure_17
 write.csv(figure_17, "figure_17.csv")
 rm(figure_17)
 
@@ -594,7 +594,7 @@ figure_18 <- warren_mapc_noforeclosures %>%
   summarize(flip_median_dif = median(price_diff_pch)) %>%
   pivot_wider(names_from = 'year', values_from = 'flip_median_dif')
 
-figure_18
+#figure_18
 write.csv(figure_18, "figure_18.csv")
 rm(figure_18)
 
@@ -644,11 +644,10 @@ figure_19 <- inner_join(llc_investors, building_investors,  by = 'year') %>%
   inner_join(value_investors, by = 'year') %>% 
   inner_join(count_investors, by = 'year')
 
-figure_19
+#figure_19
 write.csv(figure_19, "figure_19.csv")
 rm(figure_19)
 
-warren_mapc %>% select(investor_type_purchase_count) %>% distinct()
 ################ From 2023-04-01 PPT
 #spat_dat_loc <- "K:/DataServices/Datasets/Boundaries/Spatial/"
 #spat_dat_loc <- "S:/Network Shares/K Drive/DataServices/Datasets/Boundaries/Spatial/"
@@ -671,7 +670,7 @@ slide_9 <- warren %>%
   select(ct_id, investor_p) %>%
   distinct()
 
-slide_9
+#slide_9
 
 write.csv(slide_9, "slide_9.csv")
 rm(slide_9)
@@ -692,7 +691,7 @@ slide_10 <- warren %>%
   distinct() %>%
   arrange(municipal)
 
-slide_10
+#slide_10
 write.csv(slide_10, "slide_10.csv")
 rm(slide_10)
 
@@ -712,7 +711,7 @@ slide_14 <- warren_mapc %>%
   distinct() %>%
   pivot_wider(names_from = 'investor_type_purchase', values_from = 'transactions_p')
 
-slide_14
+#slide_14
 write.csv(slide_14, "slide_14.csv")
 rm(slide_14)
 
