@@ -10,16 +10,16 @@ export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_R
 setwd(data_path)
 
 #Data - 5yr window
-warren <- read_csv("20241025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv") %>%
+warren <- read_csv("20241025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv") %>%
    mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
           total_transactions = n())
-warren_noforeclosures <- read_csv("20241025_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window.csv") %>%
+warren_noforeclosures <- read_csv("20241025_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window-networks.csv") %>%
    mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
           total_transactions = n())
-warren_mapc <- read_csv("20241025_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window.csv") %>%
+warren_mapc <- read_csv("20241025_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv") %>%
   mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
          total_transactions = n())
-warren_mapc_noforeclosures <- read_csv("20241025_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window.csv") %>%
+warren_mapc_noforeclosures <- read_csv("20241025_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window-networks.csv") %>%
   mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
          total_transactions = n())
 
@@ -220,18 +220,18 @@ write.csv(figure_4, "figure_4.csv")
 rm(by_restype, all_restype, figure_4)
 
 #share of transactions that were foreclosures
-warren_mapc %>% 
-  group_by(year) %>% 
-  mutate(annual_transactions = n()) %>% 
-  group_by(year, deedtype) %>% 
-  mutate(foreclosure_c = sum(ifelse(deedtype == 'FD', 1, 0)),
-         foreclosure_p = round(100*(foreclosure_c/annual_transactions), digits = 2)
-         ) %>% 
-  select(year, deedtype, foreclosure_c, annual_transactions, foreclosure_p) %>% 
-  filter(deedtype == 'FD') %>% 
-  distinct() %>% 
-  arrange(year) %>% 
-  view()
+# warren_mapc %>% 
+#   group_by(year) %>% 
+#   mutate(annual_transactions = n()) %>% 
+#   group_by(year, deedtype) %>% 
+#   mutate(foreclosure_c = sum(ifelse(deedtype == 'FD', 1, 0)),
+#          foreclosure_p = round(100*(foreclosure_c/annual_transactions), digits = 2)
+#          ) %>% 
+#   select(year, deedtype, foreclosure_c, annual_transactions, foreclosure_p) %>% 
+#   filter(deedtype == 'FD') %>% 
+#   distinct() %>% 
+#   arrange(year) %>% 
+#   view()
 
 #Figure 5: Investor Purchases by Residential Building Type and Year, Excluding Foreclosures
 by_restype <- warren_mapc_noforeclosures %>%
