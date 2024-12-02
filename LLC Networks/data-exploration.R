@@ -21,22 +21,26 @@ sites <- read_csv("sites.csv")
 setwd(hfp_path)
 hfp_wf <- read_csv("20241025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv")
 
-#join metacorp info to companies?
-test <- hfp_wf |>
+names <- hfp_wf |> 
+  filter(buyer_llc_ind == 1 | buyer_llp_ind == 1) |> 
+  select(buyer1_adj) |> 
+  distinct()
+
+names_processed <- names |>
 #  select(buyer1_adj) |>
-  std_leading_zeros("buyer1_adj") |> #this
-  std_replace_blank("buyer1_adj") |> #this
-  std_remove_special("buyer1_adj") |> #this
-  std_spacing_characters("buyer1_adj") |> #this
-  std_squish("buyer1_adj") |> #this
-  std_trailing_leading("buyer1_adj") |> #this
-  std_street_types("buyer1_adj") |> #this #test here
-  std_small_numbers("buyer1_adj") |> #this
-  std_massachusetts("buyer1_adj")  |> #this
-  std_inst_types(c("buyer1_adj")) |> # to here
+  std_leading_zeros("buyer1_adj") |> 
+  std_replace_blank("buyer1_adj") |> 
+  std_remove_special("buyer1_adj") |> 
+  std_spacing_characters("buyer1_adj") |> 
+  std_squish("buyer1_adj") |> 
+  std_trailing_leading("buyer1_adj") |> 
+  std_street_types("buyer1_adj") |> 
+  std_small_numbers("buyer1_adj") |> 
+  std_massachusetts("buyer1_adj")  |> 
+  std_inst_types(c("buyer1_adj")) |>
   # std_remove_titles(c(col)) |> #for non-institutions and trusts
   # std_multiname("buyer1_adj") |> 
-  std_remove_middle_initial("buyer1_adj", restrictive = FALSE) |>
+  #std_remove_middle_initial("buyer1_adj", restrictive = FALSE) |>
   std_mass_corp(c("buyer1_adj")) |>
   std_replace_blank(c("buyer1_adj")) |>
   std_squish(c("buyer1_adj"))
