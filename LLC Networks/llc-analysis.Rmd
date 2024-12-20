@@ -1,0 +1,154 @@
+---
+title: "Template Project"
+author: "Zoe Iacovino and Alexa DeRosa"
+date: "2024-10-25"
+output: html_document
+---
+
+## Libraries and Functions
+
+```{r}
+source("libraries.R")
+source("data-exploration.R")
+
+network_matches <- warren_networks |> 
+  filter(!is.na(network_group))
+```
+
+warren_networks is all transactions by llcs and llps from 2000-2023
+
+# how many llcs transactions are we matching per year
+```{r}
+annual_counts <- count(warren_networks, year) |> 
+  rename(total_llc = n)
+
+annual_counts_matched <- count(network_matches, year) |> 
+  rename(matched_llc = n)
+
+counts <- full_join(annual_counts, annual_counts_matched) |> 
+  mutate(dif = total_llc - matched_llc,
+         percent = matched_llc/total_llc)
+
+ggplot(counts, aes(x = year, y = percent)) +
+  geom_bar(stat = "identity")
+```
+
+we're matching the highest percentage of transactions in 2021 - 62% (2,831 transactions not being matched)
+
+# how many unique llcs are we matching 
+```{r}
+# total
+total_llcs <- warren_networks |> 
+  select(buyer1_adj) |> 
+  distinct()
+# 51,383
+
+matched_llcs <- network_matches |> 
+  select(buyer1_adj) |> 
+  distinct()
+# 17,243
+
+# 2021
+total_llcs21 <- warren_networks |> 
+  filter(year == 2021) |> 
+  select(buyer1_adj) |> 
+  distinct()
+# 5,624
+
+matched_llcs21 <- network_matches |> 
+  filter(year == 2021) |> 
+  select(buyer1_adj) |> 
+  distinct()
+# 3,317
+```
+
+only matching 59% of unique llcs in 2021
+
+
+# what do we know about the llcs we're matching
+
+2021 data exploration (transactions)
+```{r}
+non_matches21 <- warren_networks |> 
+  filter(is.na(network_group) & year == 2021) |> 
+  count(investor_type_purchase) |> 
+  rename(no_network_count = n) 
+
+network_matches21 <- network_matches |> 
+  filter(year == 2021) |> 
+  count(investor_type_purchase) |> 
+  rename(network_count = n)
+
+inv_typ_21 <- full_join(non_matches21, network_matches21, by = "investor_type_purchase") |> 
+  filter(investor_type_purchase != "Non-investor")
+
+x <- inv_typ_21 |> 
+  pivot_longer(
+    !investor_type_purchase,
+    names_to = "network_type",
+    values_to = "count"
+  ) |> 
+  ggplot(aes(x = investor_type_purchase, y = count, fill = network_type)) + 
+  geom_bar(position = "dodge", stat = "identity", color = "black")
+
+x
+```
+
+
+# how do the networks change the investor sizes?
+```{r}
+hfp_networks <- read_csv("K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/20241025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
+
+non_matches21h <- hfp_networks |> 
+  filter(is.na(network_group) & year == 2021) |> 
+  count(investor_type_purchase) |> 
+  rename(no_network_count = n) 
+
+network_matches21h <- hfp_networks |> 
+  filter(!is.na(network_group) & year == 2021) |> 
+  count(investor_type_purchase) |> 
+  rename(network_count = n)
+
+inv_typ_21h <- full_join(non_matches21, network_matches21, by = "investor_type_purchase") |> 
+  filter(investor_type_purchase != "Non-investor")
+
+y <- inv_typ_21h |> 
+  pivot_longer(
+    !investor_type_purchase,
+    names_to = "network_type",
+    values_to = "count"
+  ) |> 
+  ggplot(aes(x = investor_type_purchase, y = count, fill = network_type)) + 
+  geom_bar(position = "dodge", stat = "identity", color = "black")
+
+y
+```
+
+
+
+
+
+## Defining Variables
+
+```{r}
+
+# output paths
+output_path<- paste0("C:/Users/",Sys.info()["username"],"/OneDrive - Metropolitan Area Planning Council")
+
+arc_pro_gdb<- "K:/DataServices/Projects/Current_Projects/"
+
+# geographics study area
+study_area<- arc.open("K:/DataServices/Projects/Current_Projects/")
+
+study_area<-arc.data2sf(arc.select(study_area))
+
+# municipal filtering variables
+muni_lower<- "Milford"
+
+muni_upper<- "MILFORD"
+
+muni_id_ob<- 185
+
+
+```
+
