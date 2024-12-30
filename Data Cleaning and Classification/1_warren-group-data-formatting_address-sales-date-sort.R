@@ -17,7 +17,7 @@ data_path <- 'K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Res
 setwd(wd)
 list.files()
 #change file name here
-warren <- fread("20240314_warren_group_2000_2023_residential_final.csv",
+warren <- fread("20241220_warren_group_2000_2023_residential_final.csv",
                 header=TRUE,
                 stringsAsFactors=FALSE,
                 colClasses=c('ct_id'='character'))
@@ -49,6 +49,6 @@ warren_df_final <- warren_df_sort %>%
 ### write sorted output for analysis
 fwrite(warren_df_final,
        paste(data_path,
-             gsub("-",'',Sys.Date()),
-             '_warren_speculative-investment-analysis-dataset.csv',
+            # gsub("-",'',Sys.Date()),
+             '20241220_warren_speculative-investment-analysis-dataset.csv',
              sep=''))
