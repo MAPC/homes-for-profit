@@ -32,9 +32,9 @@ warren_df <- warren %>%
   )
 
 
-table(warren_df$fiscal_flag)
-table(warren_df$year, warren_df$fy)
-table(warren_df$year)
+# table(warren_df$fiscal_flag)
+# table(warren_df$year, warren_df$fy)
+# table(warren_df$year)
 
 ### sort dataframe by formatted address & date
 warren_df$address <- as.factor(str_to_upper(warren_df$address)) # uppercase address and make factor
