@@ -5,21 +5,21 @@ library(sf)
 #Data Paths
 
 data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
-export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/_2000-2023/MIT tables without property managers/"
+export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/_2000-2023/without network analysis/"
 
 setwd(data_path)
 
 #Data - 5yr window
-warren <- read_csv("20241025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv") %>%
+warren <- read_csv("20241220_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv") %>%
    mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
           total_transactions = n())
-warren_noforeclosures <- read_csv("20241025_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window-networks.csv") %>%
+warren_noforeclosures <- read_csv("20241220_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window.csv") %>%
    mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
           total_transactions = n())
-warren_mapc <- read_csv("20241025_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv") %>%
+warren_mapc <- read_csv("20241220_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window.csv") %>%
   mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
          total_transactions = n())
-warren_mapc_noforeclosures <- read_csv("20241025_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window-networks.csv") %>%
+warren_mapc_noforeclosures <- read_csv("20241220_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window.csv") %>%
   mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
          total_transactions = n())
 
