@@ -16,13 +16,10 @@ options('scipen' = 10)
 
 ### load in data ############
 setwd(data_path)
-warren <- fread("20241025_warren_speculative-investment-analysis-dataset_adjusted.csv",
+warren <- fread("20241220_warren_speculative-investment-analysis-dataset_adjusted.csv",
                 header=TRUE,
                 stringsAsFactors=FALSE,
-                colClasses=c('ct_id'='character')) %>%
-  dplyr::select(ct_id, ct20_id, zipcode, muni_id, mapc, latitude, longitude, date, month, year, address, street, 
-                municipal, proptype, restype, price, price_adj, mortgage, mortgage2, buyer1_adj, buyer2_adj, seller1_adj, seller2_adj,
-                deedtype, cash_sale, yearbuilt, lotsize, intersf, totrooms, bathrooms, bedrooms, buyer1, buyer2, seller1, seller2)
+                colClasses=c('ct_id'='character'))
 
 # MAPC runs the price adjustment process below as part of our pre-processing of the warren data
 
@@ -252,7 +249,7 @@ warren_detailed_final$flip_term = ifelse(warren_detailed_final$month_horizon %in
 ### output files ############
 setwd(data_path)
 # file name should match input file name with _detailed added
-fwrite(warren_detailed_final, '20241025_warren_speculative-investment-analysis-dataset_adjusted_detailed.csv')
+fwrite(warren_detailed_final, '20241220_warren_speculative-investment-analysis-dataset_adjusted_detailed.csv')
 
 ####Archive - Don't need to run
 #warren$date <- as.Date(warren$date) (in adjust data and price variable section)
