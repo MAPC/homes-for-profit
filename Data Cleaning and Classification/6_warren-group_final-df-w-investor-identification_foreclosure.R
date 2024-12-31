@@ -28,7 +28,7 @@ setwd(data_path)
 #list.files()
 
 #change file name here
-warren_df <- read_csv('20241025_warren_speculative-investment-analysis-dataset-w-submarket.csv')
+warren_df <- read_csv('20241220_warren_speculative-investment-analysis-dataset-w-submarket.csv')
 
 ########## LLC Deduplication ##############
 # loading in metacorp tables resulting from Eric Huntley's analysis here: https://github.com/mit-spatial-action/who-owns-mass-processing
@@ -297,24 +297,24 @@ warren_df_5yr_final_mapc = warren_df_5yr_final %>%
 setwd(data_path)
 
 #with foreclosures all
-fwrite(warren_df_5yr_final, '20241025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final, '20241220_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv')
 gc()
 
 #with foreclosures - MAPC
-fwrite(warren_df_5yr_final_mapc, '20241025_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final_mapc, '20241220_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv')
 gc()
 
 #without foreclosures all
 warren_df_5yr_final_fd <- warren_df_5yr_final %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_fd, '20241025_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final_fd, '20241220_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window-networks.csv')
 
 #without foreclosures - MAPC
 warren_df_5yr_final_mapc_fd <- warren_df_5yr_final_mapc %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_mapc_fd, '20241025_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final_mapc_fd, '20241220_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window-networks.csv')
 
 ########## archive #########
 #only using 4 year horizon

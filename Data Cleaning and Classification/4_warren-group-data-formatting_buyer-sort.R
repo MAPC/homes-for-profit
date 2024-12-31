@@ -16,7 +16,7 @@ data_path <- 'K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Res
 ### load in data #########
 setwd(data_path)
 list.files()
-warren <- fread("20241025_warren_speculative-investment-analysis-dataset_adjusted_detailed.csv", stringsAsFactors=FALSE,
+warren <- fread("20241220_warren_speculative-investment-analysis-dataset_adjusted_detailed.csv", stringsAsFactors=FALSE,
                    colClasses=c('ct_id'='character')) # load in raw data
 
 ### sort dataframe by buyer1 & date
@@ -28,4 +28,4 @@ warren_sort$date <- as.Date(warren_sort$date)
 warren_distinct <- distinct(warren_sort)
 
 ### write sorted output for analysis
-fwrite(warren_distinct, '20241025_warren_speculative-investment-buyer-sort-analysis-dataset.csv')
+fwrite(warren_distinct, '20241220_warren_speculative-investment-buyer-sort-analysis-dataset.csv')
