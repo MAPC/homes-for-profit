@@ -26,21 +26,21 @@ submarket_shp = st_read("20200109_mapc-housing-submarkets.shp") |>
 setwd(data)
 #list.files()
 #changed from fread to csv because data was being lost
-warren <- read_csv("20241025_warren_speculative-investment-buyer-sort-analysis-dataset.csv") 
+warren <- read_csv("20241220_warren_speculative-investment-buyer-sort-analysis-dataset.csv") 
 
-warren_id <- warren |> 
-  #create unique ID to join on - when using data inclusive of 2023 on this field should already exist
-  mutate(unique_id = unique_identifier(warren, fields = c(everything(warren))))
-
-rm(warren)
-gc()
+# warren_id <- warren |> 
+#   #create unique ID to join on - when using data inclusive of 2023 on this field should already exist
+#   mutate(unique_id = unique_identifier(warren, fields = c(everything(warren))))
+# 
+# rm(warren)
+# gc()
 
 #making warren data spatial points
-warren_pts <- warren_id |> 
-  select(unique_id, latitude, longitude) |> 
+warren_pts <- warren |> 
+  select(id, lat, lon) |> 
   #removing any missing latitudes as st_as_sf cannot run if lat or long is missing
-  filter(complete.cases(latitude, longitude)) |> #check how many data points are missing lat/long data
-  st_as_sf(coords = c('longitude', 'latitude'),
+  filter(complete.cases(lat, lon)) |> #check how many data points are missing lat/long data
+  st_as_sf(coords = c('lon', 'lat'),
            crs = st_crs(lat_lon_CRS),
            remove = FALSE) |> 
   #setting crs to match submarket shapefile
@@ -54,16 +54,16 @@ warren_submarket <- warren_pts |>
   st_join(submarket_shp[, 'class_reor']) |> 
   dplyr::rename(mapc_submarket = class_reor) |> 
   st_drop_geometry() |> 
-  select(unique_id, mapc_submarket)
+  select(id, mapc_submarket)
 
 #add submarket data back in to full data frame
-warren_submarket_final <- left_join(warren_id, warren_submarket, by = 'unique_id')
+warren_submarket_final <- left_join(warren, warren_submarket, by = 'id')
 
 ########################
 
 # output csv
 setwd(data)
-fwrite(warren_submarket_final, "20241025_warren_speculative-investment-analysis-dataset-w-submarket.csv")
+fwrite(warren_submarket_final, "20241220_warren_speculative-investment-analysis-dataset-w-submarket.csv")
 
 ########### archive ########
 ##only need 4 year buy horizon
