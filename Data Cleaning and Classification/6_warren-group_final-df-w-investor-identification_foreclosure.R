@@ -130,11 +130,11 @@ rm(warren_w_networks)
 investor_llc <- function(df){
   #Find LLCs and LLPs that have purchased property
   investor_buyers = df %>%
-    filter(final_name %like% ' LLC' | final_name %like% ' LLP')
+    filter(buyer1_adj %like% ' LLC' | buyer1_adj %like% ' LLP')
 
-  investor_buyer_names = unique(investor_buyers$final_name)
+  investor_buyer_names = unique(investor_buyers$buyer1_adj)
 
-  df$investor_type_purchase_llc = ifelse(df$final_name %in% investor_buyer_names, 'Small LLC', 'Non-Small LLC')
+  df$investor_type_purchase_llc = ifelse(df$buyer1_adj %in% investor_buyer_names, 'Small LLC', 'Non-Small LLC')
 
   #find LLCs and LLPs that have sold property
   investor_sellers = df %>%
