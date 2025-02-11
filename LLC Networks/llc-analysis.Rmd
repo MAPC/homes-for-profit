@@ -1,118 +1,206 @@
 ---
-title: "Template Project"
-author: "Zoe Iacovino and Alexa DeRosa"
+title: "LLC Network Analysis"
+author: "Alexa DeRosa"
 date: "2024-10-25"
 output: html_document
 ---
 
-## Libraries and Functions
+## Libraries and Data
 
 ```{r}
 source("libraries.R")
-source("data-exploration.R")
+#source("data-exploration.R")
 
-network_matches <- warren_networks |> 
+data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
+#export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/"
+setwd(data_path)
+
+# homes for profit results under original methodology 2000-2023 data
+hfp_original <- read_csv("20241220_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv")
+# homes for profit results with new llc network analysis methodology 2000-2023 data
+hfp_networks <- read_csv("20250109_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
+
+network_matches <- hfp_networks |> 
   filter(!is.na(network_group))
 ```
 
-warren_networks is all transactions by llcs and llps from 2000-2023
-
-# how many llcs transactions are we matching per year
+# add fields to help with analysis 
 ```{r}
-annual_counts <- count(warren_networks, year) |> 
+hfp_networks <- hfp_networks |> 
+  mutate(
+    # add field to determine if an llc is part of a network
+    network_flag = ifelse(is.na(network_group), 0, 1)
+  )
+```
+
+# who are we matching to networks?
+```{r}
+count(hfp_networks, investor_type_purchase_llc, network_flag)
+
+#llcs
+hfp_networks |> 
+  count(buyer_llc_ind, network_flag) |> 
+  filter(buyer_llc_ind == 1) |> 
+  mutate(
+    total_t = sum(n),
+    p_t = n/total_t
+  )
+
+#llps
+hfp_networks |> 
+  count(buyer_llp_ind, network_flag) |> 
+  filter(buyer_llp_ind == 1) |> 
+  mutate(
+    total_t = sum(n),
+    p_t = n/total_t
+  )
+
+# business
+hfp_networks |> 
+  count(buyer_bus_ind, network_flag) |> 
+  filter(buyer_bus_ind == 1) |> 
+  mutate(
+    total_t = sum(n),
+    p_t = n/total_t
+  )
+
+# trust
+hfp_networks |> 
+  count(buyer_trst_ind, network_flag) |> 
+  filter(buyer_trst_ind == 1) |> 
+  mutate(
+    total_t = sum(n),
+    p_t = n/total_t
+  )
+
+# gse
+hfp_networks |> 
+  count(buyer_gse_ind, network_flag) |> 
+  filter(buyer_gse_ind == 1) |> 
+  mutate(
+    total_t = sum(n),
+    p_t = n/total_t
+  )
+
+# gov
+hfp_networks |> 
+  count(buyer_gov_ind, network_flag) |> 
+  filter(buyer_gov_ind == 1) |> 
+  mutate(
+    total_t = sum(n),
+    p_t = n/total_t
+  )
+
+# banks
+hfp_networks |> 
+  count(buyer_bnk_ind, network_flag) |> 
+  filter(buyer_bnk_ind == 1) |> 
+  mutate(
+    total_t = sum(n),
+    p_t = n/total_t
+  )
+
+test <- count(hfp_networks, investor_type_purchase_llc, buyer_bus_ind, buyer_trst_ind, buyer_gse_ind, buyer_gov_ind, buyer_bnk_ind, network_flag)
+```
+Findings:
+- we are matching 40,842 llc/llp transactions to networks
+  - 39,989 llc transactions (42% of all LLC transactions)
+  - 97 llp transactions (22% of all LLP transactions)
+- we are matching 60,595 non-llc/llp entities to networks
+  - 6,724 business transactions (20% of all business transactions)
+    - businesses are defined as buyers with 'INC', 'CORP', or 'CO' in the name
+  - 8,864 transactions by trusts (11% of all trust transactions)
+  - 15,866 gse transactions (72%)
+  - 1 gov't transaction (.07%)
+  - 37,122 bank transactions (87% of all bank transactions)
+  - there are 1,330 transactions being pulled into networks that don't meet any of the above flags
+  
+```{r}
+hfp_networks |> 
+  filter(investor_type_purchase_llc != "Small LLC" & buyer_trst_ind == 0 & buyer_bus_ind == 0 & buyer_gse_ind == 0 &
+           buyer_gov_ind == 0 & buyer_bnk_ind == 0 & network_flag == 1) |> 
+  select(buyer1_adj, address, restype, municipal, investor_type_purchase) |> 
+  count(buyer1_adj) |> 
+  arrange(desc(n))
+```
+The 1,330 transactions are from 413 different buyers. The top 2 buyers have significantly more transactions than the other 411, FREMONT INVESTMENT AND LOAN (134), FIRST HORIZON HOME LOANS (118). These 413 buyers appear to be mostly mortgage companies, investment groups, colleges, and housing authorities with one banks not being caught by the bank index (because we aren't searching for 'BANK '), lots of buyers now look like "CONDOMINIUM JOHN" or "CONDOMINIUM WILLIAM F"
+
+# how many llc/llp transactions are we matching per year
+```{r}
+annual_counts <- hfp_networks |> 
+  # filter to just llc/llp transactions
+  filter(buyer_llc_ind == 1 | buyer_llp_ind == 1) |> 
+  count(year) |> 
   rename(total_llc = n)
 
-annual_counts_matched <- count(network_matches, year) |> 
+annual_counts_matched <- hfp_networks |> 
+  # filter to just llc/llp transactions that are in networks
+  filter((buyer_llc_ind == 1 | buyer_llp_ind == 1) & network_flag == 1) |> 
+  count(year) |> 
   rename(matched_llc = n)
 
 counts <- full_join(annual_counts, annual_counts_matched) |> 
   mutate(dif = total_llc - matched_llc,
          percent = matched_llc/total_llc)
 
-ggplot(counts, aes(x = year, y = percent)) +
-  geom_bar(stat = "identity")
+ggplot(counts, aes(x = year, y = percent*100)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label= paste0((round(percent*100, digits = 0)), "%"), vjust = -.5), size = 3)
 ```
-
-we're matching the highest percentage of transactions in 2021 - 62% (2,831 transactions not being matched)
+Findings: 
+- we're matching the highest percentage of transactions in 2021 - 62% (4,950 llc transactions matched)
+- we're only matching 44% of llc transactions in 2023, likely because parcel data has not been updated in many towns
+- should we go back to 2015 (43%) or 2016 (46%) for this analysis?
 
 # how many unique llcs are we matching 
 ```{r}
 # total
-total_llcs <- warren_networks |> 
+total_llcs <- hfp_networks |> 
+  # filter to just llc/llp transactions
+  filter(buyer_llc_ind == 1 | buyer_llp_ind == 1) |>
   select(buyer1_adj) |> 
   distinct()
-# 51,383
+  # 54201
 
-matched_llcs <- network_matches |> 
+matched_llcs <- hfp_networks |> 
+  # filter to just llc/llp transactions that are in networks
+  filter((buyer_llc_ind == 1 | buyer_llp_ind == 1) & network_flag == 1) |> 
   select(buyer1_adj) |> 
   distinct()
-# 17,243
+# 17,834
 
 # 2021
-total_llcs21 <- warren_networks |> 
-  filter(year == 2021) |> 
+total_llcs21 <- hfp_networks |> 
+  filter((buyer_llc_ind == 1 | buyer_llp_ind == 1) & year == 2021) |> 
   select(buyer1_adj) |> 
   distinct()
-# 5,624
+# 6,003
 
-matched_llcs21 <- network_matches |> 
-  filter(year == 2021) |> 
+matched_llcs21 <- hfp_networks |> 
+  filter((buyer_llc_ind == 1 | buyer_llp_ind == 1) & year == 2021 & network_flag == 1) |> 
   select(buyer1_adj) |> 
   distinct()
-# 3,317
+# 3,504
 ```
+Findings:
+matching 58% of unique LLCs in 2021, 33% of LLCs overall
 
-only matching 59% of unique llcs in 2021
-
-
-# what do we know about the llcs we're matching
-
-2021 data exploration (transactions)
+# how do investors in networks compare to those that aren't in networks? (2021) -network id
 ```{r}
-non_matches21 <- warren_networks |> 
-  filter(is.na(network_group) & year == 2021) |> 
-  count(investor_type_purchase) |> 
-  rename(no_network_count = n) 
-
-network_matches21 <- network_matches |> 
-  filter(year == 2021) |> 
-  count(investor_type_purchase) |> 
-  rename(network_count = n)
-
-inv_typ_21 <- full_join(non_matches21, network_matches21, by = "investor_type_purchase") |> 
-  filter(investor_type_purchase != "Non-investor")
-
-x <- inv_typ_21 |> 
-  pivot_longer(
-    !investor_type_purchase,
-    names_to = "network_type",
-    values_to = "count"
-  ) |> 
-  ggplot(aes(x = investor_type_purchase, y = count, fill = network_type)) + 
-  geom_bar(position = "dodge", stat = "identity", color = "black")
-
-x
-```
-
-
-# how do the networks change the investor sizes?
-```{r}
-hfp_networks <- read_csv("K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/20241025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
-
 non_matches21h <- hfp_networks |> 
-  filter(is.na(network_group) & year == 2021) |> 
+  filter(network_flag == 0 & year == 2021) |> 
   count(investor_type_purchase) |> 
   rename(no_network_count = n) 
 
 network_matches21h <- hfp_networks |> 
-  filter(!is.na(network_group) & year == 2021) |> 
+  filter(network_flag == 1 & year == 2021) |> 
   count(investor_type_purchase) |> 
   rename(network_count = n)
 
-inv_typ_21h <- full_join(non_matches21, network_matches21, by = "investor_type_purchase") |> 
+inv_typ_21h <- full_join(non_matches21h, network_matches21h, by = "investor_type_purchase") |> 
   filter(investor_type_purchase != "Non-investor")
 
-y <- inv_typ_21h |> 
+inv_typ_21h |> 
   pivot_longer(
     !investor_type_purchase,
     names_to = "network_type",
@@ -120,35 +208,208 @@ y <- inv_typ_21h |>
   ) |> 
   ggplot(aes(x = investor_type_purchase, y = count, fill = network_type)) + 
   geom_bar(position = "dodge", stat = "identity", color = "black")
-
-y
 ```
 
+########################### Comparing the old and new methodologies ######################
 
-
-
-
-## Defining Variables
-
+joining data output for original methodology with the new methodology
 ```{r}
+hfp_networks_select <- hfp_networks |> 
+  select(id, buyer1_adj, final_name, investor_type_purchase_count, investor_type_purchase_llc, investor_type_purchase_building, investor_type_purchase_value, investor_type_purchase, network_flag) |> 
+  # need to rename columns before join
+  rename_with(.fn = ~ paste0("n_", .x)) |> 
+  rename(id = n_id)
 
-# output paths
-output_path<- paste0("C:/Users/",Sys.info()["username"],"/OneDrive - Metropolitan Area Planning Council")
+hfp_joined <- left_join(hfp_original, hfp_networks_select, by = "id") 
 
-arc_pro_gdb<- "K:/DataServices/Projects/Current_Projects/"
-
-# geographics study area
-study_area<- arc.open("K:/DataServices/Projects/Current_Projects/")
-
-study_area<-arc.data2sf(arc.select(study_area))
-
-# municipal filtering variables
-muni_lower<- "Milford"
-
-muni_upper<- "MILFORD"
-
-muni_id_ob<- 185
-
+rm(hfp_networks_select)
+gc()
 
 ```
 
+# how do investors in networks compare to those that aren't in networks? (2021) -buyer1_adj
+```{r}
+o_non_matches21h <- hfp_joined |> 
+  filter(n_network_flag == 0 & year == 2021) |> 
+  count(investor_type_purchase) |> 
+  rename(no_network_count = n) 
+
+o_network_matches21h <- hfp_joined |> 
+  filter(n_network_flag == 1 & year == 2021) |> 
+  count(investor_type_purchase) |> 
+  rename(network_count = n)
+
+o_inv_typ_21h <- full_join(o_non_matches21h, o_network_matches21h, by = "investor_type_purchase") |> 
+  filter(investor_type_purchase != "Non-investor")
+
+o_inv_typ_21h |> 
+  pivot_longer(
+    !investor_type_purchase,
+    names_to = "network_type",
+    values_to = "count"
+  ) |> 
+  ggplot(aes(x = investor_type_purchase, y = count, fill = network_type)) + 
+  geom_bar(position = "dodge", stat = "identity", color = "black")
+```
+
+## How did investors move sizes
+```{r}
+hfp_comp <- hfp_joined |> 
+  # select(id, investor_type_purchase_count, investor_type_purchase_llc, investor_type_purchase_building, investor_type_purchase_value, investor_type_purchase, n_investor_type_purchase_count, n_investor_type_purchase_llc, n_investor_type_purchase_building, n_investor_type_purchase_value, n_investor_type_purchase) |> 
+  mutate(
+    #make columns with new and original investor types
+    inv_type_pur_comp = paste0(investor_type_purchase, " to ", n_investor_type_purchase), 
+    inv_type_pur_llc_comp = paste0(investor_type_purchase_llc, " to ", n_investor_type_purchase_llc),
+    inv_type_pur_bldg_comp = paste0(investor_type_purchase_building, " to ", n_investor_type_purchase_building),
+    inv_type_pur_count_comp = paste0(investor_type_purchase_count, " to ", n_investor_type_purchase_count),
+    inv_type_pur_value_comp = paste0(investor_type_purchase_value, " to ", n_investor_type_purchase_value),
+    size_change = ifelse(inv_type_pur_comp == "Institutional to Institutional" | inv_type_pur_comp == "Large to Large" | 
+                           inv_type_pur_comp == "Medium to Medium" | inv_type_pur_comp == "Small to Small" | 
+                           inv_type_pur_comp == "Non-investor to Non-investor", 0, 1)
+  ) |> 
+  select(id, year, buyer1_adj, n_buyer1_adj, final_name, investor_type_purchase_llc, inv_type_pur_comp, inv_type_pur_llc_comp,
+         inv_type_pur_bldg_comp, inv_type_pur_count_comp, inv_type_pur_value_comp, size_change)
+
+#rm(hfp_joined)
+gc()
+## All buyers
+#how many changes total
+count(hfp_comp, size_change)
+#how many changes 2015 on
+hfp_comp |> filter(year >= 2015) |> count(size_change)
+#how many changes for years where we match > 50% of LLCs
+hfp_comp |> filter(year >= 2018 & year <= 2022) |> count(size_change)
+
+## LLC buyers
+#how many changes total
+hfp_comp |> filter(investor_type_purchase_llc == "Small LLC") |> count(size_change)
+#how many changes 2015 on
+hfp_comp |> filter(investor_type_purchase_llc == "Small LLC" & year >= 2015) |> count(size_change)
+#how many changes for years where we match > 50% of LLCs
+hfp_comp |> filter(investor_type_purchase_llc == "Small LLC" & year >= 2018 & year <= 2022) |> count(size_change)
+```
+Findings:
+- There were 17,031 transactions in the entire dataframe that saw a change in their final buy-side investor status (0.7% of all transactions)
+  - 10,130 transactions from 2015-2023 (1.1% of transactions)
+  - 6,623 transactions 2018-2022 (years where we match > 50% of LLCS) (1.3%)
+- There were 12,473 LLC/LLP transactions in the entire data frame that saw a change in their final buy-side investor status (13.2% of all LLC transactions)
+  - 8,954 transactions from 2015-2023 (15.5%)
+  - 6,015 transactions 2018-2022 (21.5%)
+
+## what do those changes look like  
+
+# Overall investors
+```{r}
+#transactions
+hfp_comp |> count(inv_type_pur_comp) |> arrange()
+
+#unique investors
+hfp_comp |> select(-c(id, year, buyer1_adj)) |> distinct() |> count(inv_type_pur_comp) |> arrange()
+```
+Findings: overall investors
+- no investors moved down a size!
+- transaction level
+  - 2,004 non-investor transactions moved up into investor categories!
+  - 9,255 small investor transactions moved up to larger investor size, more than half became institutional
+  - 2,954 medium investor transactions moved up to a larger size
+  - 2,818 large investor transactions became institutional investor transactions
+- unique investor level
+  - 1,538 non-investors became investors, most became small investors
+  - 7,850 investors moved up to larger sizes
+    - 6,638 small investors moved up to larger sizes - more than half became institutional
+    - 752 medium investors moved up
+    - 460 large investors became institutional
+
+# LLC investors
+```{r}
+hfp_comp |> count(inv_type_pur_llc_comp)
+
+new_llcs <- hfp_comp |> filter(inv_type_pur_llc_comp == "Non-Small LLC to Small LLC")
+```
+Findings: LLC investors
+- 3 transactions moved from being a Small LLC to Non-Small LLC - look into this
+- 2,152 transactions went from Non-Small LLC to Small LLC - this is also weird really there shouldn't have been movement in this category
+  
+# Building investors
+```{r}
+hfp_comp |> count(inv_type_pur_bldg_comp)
+```
+Findings: Building Investors
+- no transactions moved from building investor to non-investor!! 
+- 10,051 transactions moved from non-building investors to building investors once in networks
+
+# Count investors
+```{r}
+#transactions
+hfp_comp |> count(inv_type_pur_count_comp) |> arrange()
+
+#unique investors
+hfp_comp |> select(-c(id, year, buyer1_adj)) |> distinct() |> count(inv_type_pur_count_comp) |> arrange()
+```
+Findings: Count investors
+- no investors moved down a size!
+- transaction level
+  - 9,971 non-investor transactions moved up into count investor categories!
+  - 2,168 small investor transactions moved up to larger count investor size, about half became institutional
+  - 2,627 medium investor transactions moved up to a larger size
+  - 2,503 large investor transactions became institutional investor transactions
+- unique investor level
+  - 7,929 non-investors became investors, a fairly even split into each of the four sizes !!!!
+  - 1,451 investors moved up to larger sizes
+    - 640 small investors moved up to larger sizes - more than half became institutional
+    - 515 medium investors moved up
+    - 296 large investors became institutional
+    
+# Value investors
+```{r}
+#transactions
+hfp_comp |> count(inv_type_pur_value_comp) |> arrange()
+
+#unique investors
+hfp_comp |> select(-c(id, year, buyer1_adj)) |> distinct() |> count(inv_type_pur_value_comp) |> arrange()
+```
+Findings: Value investors
+- no investors moved down a size!
+- transaction level
+  - 12,046 non-investor transactions moved up into count investor categories!
+  - 2,551 small investor transactions moved up to larger count investor size, about half became institutional
+  - 2,741 medium investor transactions moved up to a larger size
+  - 2,618 large investor transactions became institutional investor transactions
+- unique investor level
+  - 6,703 non-investors became investors, more to large and institutional than medium and small
+  - 1,100 investors moved up to larger sizes
+    - 509 small investors moved up to larger sizes - more than half became institutional
+    - 400 medium investors moved up
+    - 191 large investors became institutional   
+
+# how many investors and investor transactions did we have previously?
+```{r}
+#transactions
+hfp_original |> filter(investor_type_purchase != "Non-investor") |> count()
+hfp_networks |> filter(investor_type_purchase != "Non-investor") |> count()
+
+#unique buyers
+hfp_original |> select(final_name) |> distinct() |> count()
+hfp_networks |> select(final_name) |> distinct() |> count()
+
+#unique investors
+hfp_original |> select(final_name, investor_type_purchase) |> distinct() |> filter(investor_type_purchase != "Non-investor") |> count()
+hfp_networks |> select(final_name, investor_type_purchase) |> distinct() |> filter(investor_type_purchase != "Non-investor") |> count()
+
+# difference between buyer1_adj count and final_name
+hfp_original |> select(buyer1_adj) |> distinct() |> count() #1,696,313 original 
+x <- hfp_networks |> select(buyer1_adj) |> distinct() |> count()#1,693,967 networks buyer1
+y <- hfp_networks |> select(final_name) |> distinct() |> count() #1,686,690 networks final_name
+x-y # 7,277
+
+#what does this join look like?
+buyers <- hfp_joined |> select(id, buyer1_adj, n_buyer1_adj, n_final_name) |> filter(buyer1_adj != n_buyer1_adj) |> 
+  select(-c(id)) |> distinct()
+
+```
+- originally had 500,286 investor purchases of 2,351,320 (21.3%), now we have 502,290 (21.4%) (+2004 transactions)
+- originally had 145,236 unique investors of 1,696,313 unique buyers (8.5% of buyers)
+- now we have 137,593 unique investors of 1,686,690 unique buyers (8.2%)
+    - 9,623 fewer unique investors with networks
+    ?? why are there more unique buyers with the networks than there were before?
+      - it looks like some of the name cleaning helped match buyer names, e.g. network-9972 FAGGIO LP and FAGGIO, L P were grouped together as FAGGIO LLP using Eric's methods
