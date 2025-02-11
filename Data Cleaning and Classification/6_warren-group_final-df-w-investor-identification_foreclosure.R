@@ -44,10 +44,34 @@ owners_inst <- owners_networks |>
   filter(inst == TRUE) |>
   distinct(name, cosine_group, network_group)
 rm(owners_networks)
+gc()
+
+# reading in standardizers scripts from Eric's work to help with name cleaning before matching
+source("C:/GitHub/homes-for-profit/LLC Networks/standardizers.R")
+
+# cleaning buyer names to best match network tables
+warren_df_clean <- warren_df |>
+  #  select(buyer1_adj) |>
+  std_leading_zeros("buyer1_adj") |> 
+  std_replace_blank("buyer1_adj") |> 
+  std_remove_special("buyer1_adj") |> 
+  std_spacing_characters("buyer1_adj") |> 
+  std_squish("buyer1_adj") |> 
+  std_trailing_leading("buyer1_adj") |> 
+  std_street_types("buyer1_adj") |> 
+  std_small_numbers("buyer1_adj") |> 
+  std_massachusetts("buyer1_adj")  |> 
+  std_inst_types(c("buyer1_adj")) |>
+  std_mass_corp(c("buyer1_adj")) |>
+  std_replace_blank(c("buyer1_adj")) |>
+  std_squish(c("buyer1_adj"))
+rm(warren_df, SEARCH)
+
 
 # joining owner table with network-ids to data from script 5 of this analysis
-warren_join <- left_join(warren_df, owners_inst, by = c("buyer1_adj" = "name"))
-rm(warren_df, owners_inst)
+warren_join <- left_join(warren_df_clean, owners_inst, by = c("buyer1_adj" = "name"))
+rm(warren_df_clean, owners_inst)
+gc()
 
 # # creating new buyer name field to specify network id for networks and buyer name for non-network buyers
 warren_w_networks <- warren_join |>
@@ -55,7 +79,7 @@ warren_w_networks <- warren_join |>
   #mutate(final_name = buyer1_adj)
 
 rm(warren_join)
-
+gc()
 ####### INVESTOR DEFINITION #1 -- derived from Allen et al., 2018, "Impact of Investors in Distressed Housing Markets" #######
 # The definition of investor used in this analysis stems from Allen et al., 2018
 # Whereas that paper focuses specifically on single-family houses, our data will maintain the full Warren Group dataset and simply subset when needed
@@ -297,24 +321,24 @@ warren_df_5yr_final_mapc = warren_df_5yr_final %>%
 setwd(data_path)
 
 #with foreclosures all
-fwrite(warren_df_5yr_final, '20241220_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final, '20250109_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv')
 gc()
 
 #with foreclosures - MAPC
-fwrite(warren_df_5yr_final_mapc, '20241220_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final_mapc, '20250109_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv')
 gc()
 
 #without foreclosures all
 warren_df_5yr_final_fd <- warren_df_5yr_final %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_fd, '20241220_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final_fd, '20250109_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window-networks.csv')
 
 #without foreclosures - MAPC
 warren_df_5yr_final_mapc_fd <- warren_df_5yr_final_mapc %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_mapc_fd, '20241220_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final_mapc_fd, '20250109_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window-networks.csv')
 
 ########## archive #########
 #only using 4 year horizon
