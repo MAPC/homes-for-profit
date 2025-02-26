@@ -1,0 +1,62 @@
+---
+title: "match-analysis"
+output: html_document
+---
+
+## Libraries and Data
+
+```{r}
+source("libraries.R")
+#source("data-exploration.R")
+
+data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
+#export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/"
+setwd(data_path)
+
+# homes for profit results under original methodology 2000-2023 data
+hfp_original <- read_csv("20241220_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv")
+# homes for profit results with new llc network analysis methodology 2000-2023 data
+hfp_networks <- read_csv("20250109_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
+```
+
+joining data output for original methodology with the new methodology
+```{r}
+hfp_networks_select <- hfp_networks |> 
+  filter(!is.na(network_group)) |> 
+  select(id, buyer1_adj, final_name, investor_type_purchase_count, investor_type_purchase_llc, investor_type_purchase_building, investor_type_purchase_value, investor_type_purchase, network_group) |> 
+  # need to rename columns before join
+  rename_with(.fn = ~ paste0("n_", .x)) |> 
+  rename(id = n_id)
+
+joined_matches <- left_join(hfp_networks_select, hfp_original, by = "id")
+
+rm(hfp_networks, hfp_original, hfp_networks_select)
+gc()
+
+```
+
+```{r}
+match_comp <- joined_matches |> 
+  # select(id, investor_type_purchase_count, investor_type_purchase_llc, investor_type_purchase_building, investor_type_purchase_value, investor_type_purchase, n_investor_type_purchase_count, n_investor_type_purchase_llc, n_investor_type_purchase_building, n_investor_type_purchase_value, n_investor_type_purchase) |> 
+  mutate(
+    #make columns with new and original investor types
+    inv_type_pur_comp = paste0(investor_type_purchase, " to ", n_investor_type_purchase), 
+    inv_type_pur_llc_comp = paste0(investor_type_purchase_llc, " to ", n_investor_type_purchase_llc),
+    inv_type_pur_bldg_comp = paste0(investor_type_purchase_building, " to ", n_investor_type_purchase_building),
+    inv_type_pur_count_comp = paste0(investor_type_purchase_count, " to ", n_investor_type_purchase_count),
+    inv_type_pur_value_comp = paste0(investor_type_purchase_value, " to ", n_investor_type_purchase_value),
+    size_change = ifelse(inv_type_pur_comp == "Institutional to Institutional" | inv_type_pur_comp == "Large to Large" | 
+                           inv_type_pur_comp == "Medium to Medium" | inv_type_pur_comp == "Small to Small" | 
+                           inv_type_pur_comp == "Non-investor to Non-investor", 0, 1)
+  ) |> 
+  select(id, year, buyer1_adj, n_buyer1_adj, final_name, investor_type_purchase_llc, inv_type_pur_comp, inv_type_pur_llc_comp,
+         inv_type_pur_bldg_comp, inv_type_pur_count_comp, inv_type_pur_value_comp, size_change)
+```
+
+
+
+```{r}
+
+```
+
+
