@@ -215,7 +215,7 @@ figure_4 <- rbind(by_restype, all_restype) |>
   select(restype, year, investor_transactions_p) |>
   arrange(year) |>
   pivot_wider(names_from = 'year', values_from = 'investor_transactions_p') |> 
-  arrange(factor(res_group, levels = c("CON", "R1F", "R2F", "R3F", "All Residential Types")))
+  arrange(factor(restype, levels = c("CON", "R1F", "R2F", "R3F", "All Residential Types")))
 
 #figure_4
 write.csv(figure_4, "figure_4.csv")
@@ -272,7 +272,7 @@ figure_5 <- rbind(by_restype, all_restype) |>
   select(restype, year, investor_transactions_p) |>
   arrange(year) |>
   pivot_wider(names_from = 'year', values_from = 'investor_transactions_p') |> 
-  arrange(factor(res_group, levels = c("CON", "R1F", "R2F", "R3F", "All Residential Types")))
+  arrange(factor(restype, levels = c("CON", "R1F", "R2F", "R3F", "All Residential Types")))
 
 figure_5
 write.csv(figure_5, "figure_5.csv")
@@ -295,7 +295,7 @@ figure_6 <- warren_mapc |>
   arrange(year) |>
   distinct() |>
   pivot_wider(names_from = 'year', values_from = 'transactions_p') |> 
-  arrange(factor(res_group, levels = c("Institutional", "Large", "Medium", "Small")))
+  arrange(factor(investor_type_purchase, levels = c("Institutional", "Large", "Medium", "Small")))
 
 #figure_6
 write.csv(figure_6, "figure_6.csv")
@@ -319,7 +319,7 @@ figure_7 <- warren_mapc |>
   arrange(restype) |>
   distinct() |>
   pivot_wider(names_from = 'investor', values_from = 'sales_p') |> 
-  arrange(factor(res_group, levels = c("R1F", "R2F", "R3F", "CON")))
+  arrange(factor(restype, levels = c("R1F", "R2F", "R3F", "CON")))
 
 #figure_7
 write.csv(figure_7, "figure_7.csv")
@@ -528,7 +528,7 @@ figure_14 <- warren_mapc_noforeclosures |>
   distinct() |>
   arrange(year) |>
   pivot_wider(names_from = 'year', values_from = 'flip_p') |> 
-  arrange(factor(res_group, levels = c("APT", "CON", "R1F", "R2F", "R3F")))
+  arrange(factor(restype, levels = c("APT", "CON", "R1F", "R2F", "R3F")))
 
 #figure_14
 write.csv(figure_14, "figure_14.csv")
@@ -552,7 +552,7 @@ figure_15 <- warren_mapc_noforeclosures |>
   arrange(restype, investor_type_sale) |>
   distinct() |>
   pivot_wider(names_from = 'restype', values_from = 'flip_p') |> 
-  arrange(factor(res_group, levels = c("Institutional", "Large", "Medium", "Small")))
+  arrange(factor(investor_type_sale, levels = c("Institutional", "Large", "Medium", "Small")))
 
 #figure_15
 write.csv(figure_15, "figure_15.csv")
@@ -586,7 +586,7 @@ figure_17 <- warren_mapc_noforeclosures |>
   #calculate median sales price by year and flip status
   summarize(median_sales = median(price_adj)) |>
   pivot_wider(names_from = 'year', values_from = 'median_sales') |> 
-  arrange(desc(buy_side_flips))
+  arrange(desc(buy_side_flip))
 
 #figure_17
 write.csv(figure_17, "figure_17.csv")
@@ -606,7 +606,7 @@ figure_18 <- warren_mapc_noforeclosures |>
   #calculate median percent price difference by year and investor group -- using flip price difference % variable created in script 3
   summarize(flip_median_dif = median(price_diff_pch)) |>
   pivot_wider(names_from = 'year', values_from = 'flip_median_dif') |> 
-  arrange(factor(res_group, levels = c("All Other Investors", "Institutional Investors", "Non-investor")))
+  arrange(factor(investor_group, levels = c("All Other Investors", "Institutional Investors", "Non-investor")))
 
 #figure_18
 write.csv(figure_18, "figure_18.csv")
@@ -728,9 +728,3 @@ slide_14 <- warren_mapc |>
 #slide_14
 write.csv(slide_14, "slide_14.csv")
 rm(slide_14)
-
-
-
-
-
-
