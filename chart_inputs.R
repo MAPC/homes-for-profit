@@ -68,7 +68,8 @@ table_1 <- warren_mapc |>
     transactions = n(),
     transactions_p = transactions/total_transactions
   ) |>
-  distinct()
+  distinct() |> 
+  arrange(factor(restype_group, levels = c("R1F", "R2F", "R3F", "CON", "APT", "Other Residential Buildings")))
 
 #table_1
 write.csv(table_1, "table_1.csv")
@@ -86,7 +87,9 @@ table_2 <- warren_mapc |>
   #count investor transactions by investor size and then calculate %
   reframe(transactions = n(),
           transactions_p = transactions/total_investor) |>
-  distinct()
+  distinct() |> 
+  arrange(factor(investor_type_purchase, levels = c("Small", "Medium", "Large", "Institutional")))
+
 
 #table_2
 write.csv(table_2, "table_2.csv")
