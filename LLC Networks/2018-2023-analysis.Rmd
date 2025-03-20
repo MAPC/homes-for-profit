@@ -1,0 +1,135 @@
+---
+title: "2018-2023-analysis"
+output: html_document
+---
+
+```{r}
+source("libraries.R")
+
+data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
+setwd(data_path)
+
+# homes for profit results with new llc network analysis methodology 2000-2023 data
+hfp_networks_18_22 <- read_csv("20250109_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv") |> 
+  filter(year >= 2018 & year <= 2022)
+
+gc()
+```
+
+
+# Helper variables
+```{r}
+#Variables to help
+res_list <- c("R1F", "R2F", "R3F", "CON")
+#can't include first or last 3 years of data due to investor definitions
+investor_year_min <- min(hfp_networks_18_22$year) + 4
+investor_year_max <- max(hfp_networks_18_22$year) - 4
+#can't include first 2 years or last 2 years due to flip definition
+flip_year_min <- min(hfp_networks_18_22$year) + 2
+flip_year_max <- max(hfp_networks_18_22$year) - 2
+```
+
+
+# Data points to compare to HFP report
+
+## All 2018-2022
+```{r}
+count(hfp_networks_18_22)
+
+#Percent of 2018-2022 transactions made by an investor
+hfp_networks_18_22 |> 
+  #calculate total transactions 
+  mutate(total_transactions_period = n()) |>
+  #filter to only investor transactions
+  filter(investor_type_purchase != "Non-investor") |>
+  #count total investor transactions then calculate %
+  mutate(investor_transactions = n(),
+         investor_transactions_p = investor_transactions/total_transactions_period) |>
+  select(investor_transactions_p) |>
+  distinct() 
+```
+- 514,079 transactions
+- 21.2% investor transacations
+
+## MAPC
+```{r}
+# count of transactions in MAPC region
+count(filter(hfp_networks_18_22, mapc == 1))
+
+#Percent of transactions in Metro Boston made by an investor - time period?
+hfp_networks_18_22 |> 
+  #filter to MAPC
+  filter(mapc == 1) |>
+  #calculate total transactions in investor years
+  mutate(total_transactions_period = n()) |>
+  #filter to only investor transactions
+  filter(investor_type_purchase != "Non-investor") |>
+  #count total investor transactions then calculate %
+  mutate(investor_transactions = n(),
+         investor_transactions_p = investor_transactions/total_transactions_period) |>
+  select(investor_transactions_p) |>
+  distinct() 
+```
+- 218,680 MAPC transactions
+- 20.8% investor transactions
+
+# Tables
+
+## Helpful to know - count and % of investors by size and property type
+```{r}
+hfp_networks_18_22 |> 
+  #filter to MAPC
+  filter(mapc == 1) |>
+  group_by(investor_type_purchase) |>
+  mutate(trans_by_investor_type = n()) |>
+  filter(restype %in% res_list | restype == 'APT') |>
+  group_by(restype, investor_type_purchase) |>
+  mutate(count = n(),
+         percent = count/trans_by_investor_type) |>
+  select(investor_type_purchase, restype, count, percent) |>
+  arrange(investor_type_purchase, restype) |>
+  distinct()
+```
+
+
+## Table 1: Warren Group Real Estate Transactions by Residential Type, MAPC Region
+```{r}
+hfp_networks_18_22 |> 
+  #filter to MAPC
+  filter(mapc == 1) |>
+  mutate(total_transactions = n()) |> 
+  select(restype, total_transactions) |>
+  mutate(restype_group = ifelse(restype == "REO" | restype == "MOB" | restype == "MUR" | restype == "NEW" | restype == "OMR", "Other Residential Buildings", restype)) |> 
+  group_by(restype_group) |>
+  #count transactions by restype then divide by total transactions in full dataset
+  reframe(
+    transactions = n(),
+    transactions_p = transactions/total_transactions
+  ) |>
+  distinct() |> 
+  arrange(factor(restype_group, levels = c("R1F", "R2F", "R3F", "CON", "APT", "Other Residential Buildings")))
+```
+
+
+# Table 2: Warren Group Real Estate Investor Transactions by Investor Size, MAPC Region
+```{r}
+hfp_networks_18_22 |> 
+  #filter to MAPC
+  filter(mapc == 1) |>
+  #filtering to only investor transactions
+  filter(investor_type_purchase != "Non-investor") |>
+  #count of all investor transatcionts
+  mutate(total_investor = n()) |>
+  group_by(investor_type_purchase) |>
+  #count investor transactions by investor size and then calculate %
+  reframe(transactions = n(),
+          transactions_p = transactions/total_investor) |>
+  distinct() |> 
+    arrange(factor(investor_type_purchase, levels = c("Small", "Medium", "Large", "Institutional")))
+```
+
+
+```{r}
+
+```
+
