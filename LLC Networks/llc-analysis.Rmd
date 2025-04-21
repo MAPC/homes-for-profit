@@ -22,7 +22,11 @@ hfp_networks <- read_csv("20250109_warren_speculative-investment-analysis-datase
 
 network_matches <- hfp_networks |> 
   filter(!is.na(network_group))
+
+gc()
 ```
+
+network-170 all medium
 
 # add fields to help with analysis 
 ```{r}
@@ -102,11 +106,12 @@ hfp_networks |>
 
 test <- count(hfp_networks, investor_type_purchase_llc, buyer_bus_ind, buyer_trst_ind, buyer_gse_ind, buyer_gov_ind, buyer_bnk_ind, network_flag)
 ```
+
 Findings:
 - we are matching 40,842 llc/llp transactions to networks
   - 39,989 llc transactions (42% of all LLC transactions)
   - 97 llp transactions (22% of all LLP transactions)
-- we are matching 60,595 non-llc/llp entities to networks
+- we are matching 60,595 non-llc/llp entity transactions to networks
   - 6,724 business transactions (20% of all business transactions)
     - businesses are defined as buyers with 'INC', 'CORP', or 'CO' in the name
   - 8,864 transactions by trusts (11% of all trust transactions)
@@ -147,6 +152,7 @@ ggplot(counts, aes(x = year, y = percent*100)) +
   geom_bar(stat = "identity") +
   geom_text(aes(label= paste0((round(percent*100, digits = 0)), "%"), vjust = -.5), size = 3)
 ```
+
 Findings: 
 - we're matching the highest percentage of transactions in 2021 - 62% (4,950 llc transactions matched)
 - we're only matching 44% of llc transactions in 2023, likely because parcel data has not been updated in many towns
@@ -160,7 +166,7 @@ total_llcs <- hfp_networks |>
   filter(buyer_llc_ind == 1 | buyer_llp_ind == 1) |>
   select(buyer1_adj) |> 
   distinct()
-  # 54201
+  # 54,201
 
 matched_llcs <- hfp_networks |> 
   # filter to just llc/llp transactions that are in networks
@@ -168,6 +174,22 @@ matched_llcs <- hfp_networks |>
   select(buyer1_adj) |> 
   distinct()
 # 17,834
+
+# total entities
+total_ent <- hfp_networks |> 
+  # filter to just non llc/llp entity transactions
+  filter(buyer_bus_ind == 1 | buyer_trst_ind == 1 | buyer_gse_ind == 1 | buyer_gov_ind == 1 | buyer_bnk_ind == 1) |>
+  select(buyer1_adj) |> 
+  distinct()
+  # 66,407
+
+matched_ent <- hfp_networks |> 
+  # filter to just non llc/llp entity transactions that are in networks
+  filter((buyer_bus_ind == 1 | buyer_trst_ind == 1 | buyer_gse_ind == 1 | buyer_gov_ind == 1 | buyer_bnk_ind == 1) 
+         & network_flag == 1) |> 
+  select(buyer1_adj, network_group) |> 
+  distinct()
+# 1,466
 
 # 2021
 total_llcs21 <- hfp_networks |> 
