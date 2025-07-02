@@ -1,0 +1,204 @@
+---
+title: "blog-post-charts"
+output: html_document
+---
+
+```{r}
+library(stylehaven)
+library(ggplot2)
+library(tidyverse)
+
+data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
+export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/visuals/inputs/_2000-2023/MIT tables with name cleaning without property managers"
+```
+
+
+# Load Data
+
+```{r}
+setwd(data_path)
+
+warren_mapc <- read_csv("20250109_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv") |>
+  mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
+         total_transactions = n())
+
+old_warren_mapc <- read_csv("20241220_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window.csv") |>
+  mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
+         total_transactions = n())
+```
+
+# Style basics
+```{r}
+#font_add_weights("Source Sans 3", semibold = 500)
+
+base_col <- "#287FC8"
+palx_colors <- palx(base_col, n_shades = 6, plot = TRUE)
+qual_pal <- palx_colors[["shade04"]]
+
+mini_pal <- unname(c(
+    palx_colors[["shade01"]]["gray"],
+    palx_colors[["shade03"]]["gray"],
+    qual_pal[c("green", "blue", "teal")]
+))
+
+```
+
+
+
+```{r}
+#Table 2: Warren Group Real Estate Investor Transactions by Investor Size, MAPC Region
+table_2 <- warren_mapc |>
+  #filtering to only investor transactions
+  filter(investor == "Investor") |>
+  #count of all investor transatcionts
+  mutate(total_investor = n()) |>
+  group_by(investor_type_purchase) |>
+  #count investor transactions by investor size and then calculate %
+  reframe(transactions = n(),
+          transactions_p = transactions/total_investor) |>
+  distinct() |> 
+  arrange(factor(investor_type_purchase, levels = c("Small", "Medium", "Large", "Institutional")))
+
+table_2.5 <- old_warren_mapc |>
+  #filtering to only investor transactions
+  filter(investor == "Investor") |>
+  #count of all investor transatcionts
+  mutate(total_investor = n()) |>
+  group_by(investor_type_purchase) |>
+  #count investor transactions by investor size and then calculate %
+  reframe(og_transactions = n(),
+          og_transactions_p = og_transactions/total_investor) |>
+  distinct() |> 
+  arrange(factor(investor_type_purchase, levels = c("Small", "Medium", "Large", "Institutional")))
+
+# Compare data
+joined_tables <- full_join(table_2, table_2.5) |> 
+  mutate(difference = transactions - og_transactions)
+
+```
+
+# bar chart to show change in investor transactions by size
+```{r}
+ggplot(joined_tables, aes(x = investor_type_purchase, y = difference)) +
+    geom_col(width = 0.5, fill = palx_colors[["shade03"]]["teal"]) +
+    geom_text(aes(label = difference), vjust = 1, nudge_y = -0.5) +
+    theme(panel.grid.major.y = element_line(color = "grey40"),
+          panel.grid.minor.y = element_line(color = "grey60"),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.background = element_rect(fill = "white", color = NULL)
+        ) +
+    labs(
+        x = NULL, y = NULL,
+        title = "Change in Size Designation of Investor Transactions",
+        subtitle = "2000-2023"
+    )
+```
+
+
+# stracked bar chart to show what proportion of investors moved up in size
+## data prep
+
+```{r}
+setwd(data_path)
+# homes for profit results under original methodology 2000-2023 data
+hfp_original <- read_csv("20241220_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv")
+# homes for profit results with new llc network analysis methodology 2000-2023 data
+hfp_networks <- read_csv("20250109_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
+
+hfp_networks_select <- hfp_networks |> 
+  select(id, buyer1_adj, final_name, investor_type_purchase_count, investor_type_purchase_llc, investor_type_purchase_building, investor_type_purchase_value, investor_type_purchase, network_group) |> 
+  mutate(
+    # add field to determine if an llc is part of a network
+    network_flag = ifelse(is.na(network_group), 0, 1)
+  ) |> 
+  # need to rename columns before join
+  rename_with(.fn = ~ paste0("n_", .x)) |> 
+  rename(id = n_id)
+
+rm(hfp_networks)
+gc()
+  
+hfp_joined <- left_join(hfp_original, hfp_networks_select, by = "id") 
+rm(hfp_original, hfp_networks_select)
+gc()
+```
+
+
+```{r}
+## How did investors move sizes
+hfp_comp <- hfp_joined |> 
+   select(id, year, buyer1_adj, n_buyer1_adj, final_name, investor_type_purchase_count, investor_type_purchase_llc, investor_type_purchase_building, investor_type_purchase_value, investor_type_purchase, n_investor_type_purchase_count, n_investor_type_purchase_llc, n_investor_type_purchase_building, n_investor_type_purchase_value, n_investor_type_purchase) |> 
+  mutate(
+    #make columns with new and original investor types
+    inv_type_pur_comp = paste0(investor_type_purchase, " to ", n_investor_type_purchase), 
+    inv_type_pur_llc_comp = paste0(investor_type_purchase_llc, " to ", n_investor_type_purchase_llc),
+    inv_type_pur_bldg_comp = paste0(investor_type_purchase_building, " to ", n_investor_type_purchase_building),
+    inv_type_pur_count_comp = paste0(investor_type_purchase_count, " to ", n_investor_type_purchase_count),
+    inv_type_pur_value_comp = paste0(investor_type_purchase_value, " to ", n_investor_type_purchase_value),
+    size_change = ifelse(inv_type_pur_comp == "Institutional to Institutional" | inv_type_pur_comp == "Large to Large" | inv_type_pur_comp == "Medium to Medium" | inv_type_pur_comp == "Small to Small" | inv_type_pur_comp == "Non-investor to Non-investor", 0, 1)
+  ) 
+#rm(hfp_joined)
+gc()
+## All buyers
+#how many changes total
+count(hfp_comp, size_change)
+#how many changes 2015 on
+hfp_comp |> filter(year >= 2015) |> count(size_change)
+#how many changes for years where we match > 50% of LLCs
+hfp_comp |> filter(year >= 2018 & year <= 2022) |> count(size_change)
+
+## LLC buyers
+#how many changes total
+hfp_comp |> filter(investor_type_purchase_llc == "Small LLC") |> count(size_change)
+#how many changes 2015 on
+hfp_comp |> filter(investor_type_purchase_llc == "Small LLC" & year >= 2015) |> count(size_change)
+#how many changes for years where we match > 50% of LLCs
+hfp_comp |> filter(investor_type_purchase_llc == "Small LLC" & year >= 2018 & year <= 2022) |> count(size_change)
+```
+
+# data table for sankey diagram
+```{r}
+sankey <- hfp_comp |> 
+  select(id, investor_type_purchase, n_investor_type_purchase, inv_type_pur_comp) |> 
+  group_by(investor_type_purchase, n_investor_type_purchase) |> 
+  count()
+
+sankey_1822 <- hfp_comp |> 
+  filter(year >= 2018 & year <= 2022) |> 
+  select(id, investor_type_purchase, n_investor_type_purchase, inv_type_pur_comp) |> 
+  group_by(investor_type_purchase, n_investor_type_purchase) |> 
+  count()
+
+write.csv(sankey, "C:/Users/aderosa/OneDrive - Metropolitan Area Planning Council/Shared Documents - Data Services/_Current Projects/_Housing/LLC Owner Networks - NNIP/04_Data/tables for visualizations/sankey.csv")
+
+write.csv(sankey_1822, "C:/Users/aderosa/OneDrive - Metropolitan Area Planning Council/Shared Documents - Data Services/_Current Projects/_Housing/LLC Owner Networks - NNIP/04_Data/tables for visualizations/sankey_1822.csv")
+```
+
+
+```{r}
+health_to_plot2 <- self_rated_health |>
+    mutate(response = forcats::fct_rev(response)) |>
+    arrange(group, response) |>
+    group_by(group) |>
+    mutate(stack = stack_lbls(value, fill = TRUE)) |>
+    ungroup()
+```
+
+## chart
+```{r}
+ ggplot(joined_tables, aes(x = investor_type_purchase, y = difference, fill = response, group = group)) +
+    geom_col(width = 0.8, position = position_fill()) +
+    geom_text(aes(label = percent100(value), y = stack),
+        color = dark_gray
+    ) +
+    scale_fill_manual(values = mini_pal[3:7], guide = guide_legend(reverse = TRUE)) +
+    scale_y_barcontinuous(breaks = NULL) +
+    labs(
+        x = NULL, y = NULL, fill = "Response",
+        title = "Self-rated health by gender",
+        subtitle = "Share of adults, Connecticut, 2024"
+    )
+
+```
+

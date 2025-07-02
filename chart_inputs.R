@@ -22,6 +22,9 @@ warren_mapc <- read_csv("20250109_warren_speculative-investment-analysis-dataset
 warren_mapc_noforeclosures <- read_csv("20250109_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window-networks.csv") |>
   mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
          total_transactions = n())
+old_warren_mapc <- read_csv("20241220_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window.csv") |>
+  mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
+         total_transactions = n())
 
 #Variables to help
 res_list <- c("R1F", "R2F", "R3F", "CON")
@@ -94,6 +97,23 @@ table_2 <- warren_mapc |>
 #table_2
 write.csv(table_2, "table_2.csv")
 rm(table_2)
+
+table_2.5 <- old_warren_mapc |>
+  #filtering to only investor transactions
+  filter(investor == "Investor") |>
+  #count of all investor transatcionts
+  mutate(total_investor = n()) |>
+  group_by(investor_type_purchase) |>
+  #count investor transactions by investor size and then calculate %
+  reframe(transactions = n(),
+          transactions_p = transactions/total_investor) |>
+  distinct() |> 
+  arrange(factor(investor_type_purchase, levels = c("Small", "Medium", "Large", "Institutional")))
+
+
+#table_2
+write.csv(table_2.5, "table_2.5_original.csv")
+rm(table_2.5)
 
 #Figure 1: Real Estate Transactions by Residential Building Type and Year, MAPC Region
 figure_1 <- warren_mapc |>

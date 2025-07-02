@@ -191,18 +191,18 @@ matched_ent <- hfp_networks |>
   distinct()
 # 1,466
 
-# 2021
+# 2018-2022
 total_llcs21 <- hfp_networks |> 
-  filter((buyer_llc_ind == 1 | buyer_llp_ind == 1) & year == 2021) |> 
+  filter((buyer_llc_ind == 1 | buyer_llp_ind == 1) & (year >= 2018 & year <= 2022)) |> 
   select(buyer1_adj) |> 
   distinct()
-# 6,003
+# 2021: 6,003 2018-2022: 21,500
 
 matched_llcs21 <- hfp_networks |> 
-  filter((buyer_llc_ind == 1 | buyer_llp_ind == 1) & year == 2021 & network_flag == 1) |> 
+  filter((buyer_llc_ind == 1 | buyer_llp_ind == 1)  & (year >= 2018 & year <= 2022) & network_flag == 1) |> 
   select(buyer1_adj) |> 
   distinct()
-# 3,504
+#2021: 3,504 2018-2022: 11,017 (51)
 ```
 Findings:
 matching 58% of unique LLCs in 2021, 33% of LLCs overall
@@ -210,12 +210,12 @@ matching 58% of unique LLCs in 2021, 33% of LLCs overall
 # how do investors in networks compare to those that aren't in networks? (2021) -network id
 ```{r}
 non_matches21h <- hfp_networks |> 
-  filter(network_flag == 0 & year == 2021) |> 
+  filter(network_flag == 0 & (year >= 2018 & year <= 2022)) |> 
   count(investor_type_purchase) |> 
   rename(no_network_count = n) 
 
 network_matches21h <- hfp_networks |> 
-  filter(network_flag == 1 & year == 2021) |> 
+  filter(network_flag == 1 & (year >= 2018 & year <= 2022)) |> 
   count(investor_type_purchase) |> 
   rename(network_count = n)
 
@@ -252,12 +252,12 @@ gc()
 # how do investors in networks compare to those that aren't in networks? (2021) -buyer1_adj
 ```{r}
 o_non_matches21h <- hfp_joined |> 
-  filter(n_network_flag == 0 & year == 2021) |> 
+  filter(n_network_flag == 0 & (year >= 2018 & year <= 2022)) |> 
   count(investor_type_purchase) |> 
   rename(no_network_count = n) 
 
 o_network_matches21h <- hfp_joined |> 
-  filter(n_network_flag == 1 & year == 2021) |> 
+  filter(n_network_flag == 1 & (year >= 2018 & year <= 2022)) |> 
   count(investor_type_purchase) |> 
   rename(network_count = n)
 
@@ -324,6 +324,8 @@ Findings:
 ```{r}
 #transactions
 hfp_comp |> count(inv_type_pur_comp) |> arrange()
+
+hfp_comp |> filter(year>=2018 & year<= 2022) |> count(inv_type_pur_comp) |> arrange()
 
 #unique investors
 hfp_comp |> select(-c(id, year, buyer1_adj)) |> distinct() |> count(inv_type_pur_comp) |> arrange()
