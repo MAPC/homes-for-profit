@@ -18,11 +18,18 @@ export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_R
 ```{r}
 setwd(data_path)
 
-warren_mapc <- read_csv("20250109_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv") |>
+# warren_mapc <- read_csv("20250109_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv") |>
+#   mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
+#          total_transactions = n())
+# 
+# old_warren_mapc <- read_csv("20241220_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window.csv") |>
+#   mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
+#          total_transactions = n())
+
+hfp_original <- read_csv("20241220_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv") |>
   mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
          total_transactions = n())
-
-old_warren_mapc <- read_csv("20241220_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window.csv") |>
+hfp_networks <- read_csv("20250109_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv") |>
   mutate(investor = ifelse(investor_type_purchase != "Non-investor", "Investor", "Non-investor"),
          total_transactions = n())
 ```
@@ -46,8 +53,8 @@ mini_pal <- unname(c(
 
 
 ```{r}
-#Table 2: Warren Group Real Estate Investor Transactions by Investor Size, MAPC Region
-table_2 <- warren_mapc |>
+#Table 2: Warren Group Real Estate Investor Transactions by Investor Size, MA
+table_2 <- hfp_networks |>
   #filtering to only investor transactions
   filter(investor == "Investor") |>
   #count of all investor transatcionts
@@ -59,7 +66,7 @@ table_2 <- warren_mapc |>
   distinct() |> 
   arrange(factor(investor_type_purchase, levels = c("Small", "Medium", "Large", "Institutional")))
 
-table_2.5 <- old_warren_mapc |>
+table_2.5 <- hfp_original |>
   #filtering to only investor transactions
   filter(investor == "Investor") |>
   #count of all investor transatcionts
@@ -101,10 +108,10 @@ ggplot(joined_tables, aes(x = investor_type_purchase, y = difference)) +
 
 ```{r}
 setwd(data_path)
-# homes for profit results under original methodology 2000-2023 data
-hfp_original <- read_csv("20241220_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv")
-# homes for profit results with new llc network analysis methodology 2000-2023 data
-hfp_networks <- read_csv("20250109_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
+# # homes for profit results under original methodology 2000-2023 data
+# hfp_original <- read_csv("20241220_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv")
+# # homes for profit results with new llc network analysis methodology 2000-2023 data
+# hfp_networks <- read_csv("20250109_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
 
 hfp_networks_select <- hfp_networks |> 
   select(id, buyer1_adj, final_name, investor_type_purchase_count, investor_type_purchase_llc, investor_type_purchase_building, investor_type_purchase_value, investor_type_purchase, network_group) |> 

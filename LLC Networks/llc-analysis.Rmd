@@ -249,7 +249,7 @@ gc()
 
 ```
 
-# how do investors in networks compare to those that aren't in networks? (2021) -buyer1_adj
+# how do investors in networks compare to those that aren't in networks? (2018-2022) -buyer1_adj
 ```{r}
 o_non_matches21h <- hfp_joined |> 
   filter(n_network_flag == 0 & (year >= 2018 & year <= 2022)) |> 
