@@ -1,0 +1,81 @@
+---
+title: "flips-by-building-type"
+output: html_document
+---
+
+```{r echo=FALSE, warning=FALSE}
+source("C:/GitHub/homes-for-profit/libraries.R")
+
+data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
+export_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Analysis/Data Requests/"
+setwd(data_path)
+
+# homes for profit results with new llc network analysis methodology 2000-2023 data
+hfp_networks <- read_csv("20250109_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
+
+gc()
+```
+
+ 
+```{r}
+hfp_select <- hfp_networks |> 
+  select(final_name, ct20_id, municipal, mapc_submarket, year, price, price_adj, mortgage, cash_sale, deedtype, restype, usecode, usage, style, yearbuilt, bedrooms, flip_horizon, same_day_sale, flip_ind, buy_side_flip, sell_side_flip, price_diff, price_diff_pch, month_horizon, buy_horizon, flip_term,   investor_type_purchase_count, investor_type_purchase_llc, investor_type_purchase_building, investor_type_purchase_value, investor_type_purchase)
+
+gc()
+```
+
+what is the unit count or assessing use codes, of the apartment buildings that were cited as being flipped in the study?
+```{r}
+flips_by_use <- hfp_select |> 
+  filter(flip_ind == 1) |> 
+  mutate(total = n()) |> 
+  group_by(usecode) |> 
+  mutate(
+    count = n(),
+    percent = round((count/total)*100, digits = 2)
+    ) |> 
+  select(usecode, count, percent) |> 
+  distinct()
+
+usage <- hfp_select |> select(usecode, usage) |> distinct()
+```
+
+- re-iterate our definition of flips
+- 199,588 flips (2000-2023)
+- the vast majority (62%, 123,312 sales) of flips were of single family homes (101), with the next most common flipped property type being condos (102) at 21% (42,863 sales). The only other use codes that represent more than 1% of all flipped properties were two-family homes (104) at 8% (16,439 sales), three-family homes (105) at 4% (8,209 sales), and 4-8 unit apartment buildings (111) at 2% (3,117 sales)
+- note: Use codes are not clean
+- attach csv with use code, count, and percent
+
+I am curious if they were more small apartments (use code 114 - four to six units, or bigger apartment buildings?
+- There were only 578 flips of 9+ unit apartment buildings (use code 112), which represent just 0.29% of all flips in our dataset
+
+Any insights into the owner profile of apartment building vs other property-types (Residential or mixed-use)? 
+```{r}
+ownership_by_use <- hfp_select |> 
+  group_by(usecode) |> 
+  mutate(total = n()) |> 
+  filter(investor_type_purchase != "Non-investor") |> 
+  mutate(
+    inv_count = n(),
+    usecode_p = round((inv_count/total)*100, digits = 2)
+    ) |> 
+  select(usecode, inv_count, usecode_p) |> 
+  distinct()
+
+ownership_size_by_use <- hfp_select |> 
+  group_by(usecode) |> 
+  mutate(total = n()) |> 
+  group_by(usecode, investor_type_purchase) |> 
+  mutate(
+    count = n(),
+    percent = round((count/total)*100, digits = 2)
+    ) |> 
+  select(usecode, investor_type_purchase, count, percent) |> 
+  distinct()
+
+```
+- all owners of apartment buildings (buildings with four or more units) are classified as investors under our definitions. 
+- 
+
+On another topic, when is the next time the data behind the MAPC submarkets will be updated? 
+
