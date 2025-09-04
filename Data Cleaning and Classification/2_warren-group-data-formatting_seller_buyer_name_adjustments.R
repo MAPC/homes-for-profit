@@ -14,7 +14,7 @@ setwd(data_path)
 list.files()
 
 #change file name here
-warren_df = fread("20241220_warren_speculative-investment-analysis-dataset.csv", stringsAsFactors = F, encoding = "Latin-1")
+warren_df = fread("20250903_warren_speculative-investment-analysis-dataset.csv", stringsAsFactors = F, encoding = "Latin-1")
 
 warren_temp = warren_df
 
@@ -334,4 +334,4 @@ warren_adj = warren_temp %>%
 
 rm(warren_df, warren_temp, warren_adj)
 #change file name here (same as input file but add _adjusted)
-fwrite(warren_adj_final, "20241220_warren_speculative-investment-analysis-dataset_adjusted.csv")
+fwrite(warren_adj_final, "20250903_warren_speculative-investment-analysis-dataset_adjusted.csv")

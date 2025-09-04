@@ -1,8 +1,7 @@
 ### Warren Group Investor Identification
 ### Authors: Seleeke Flingai, Sarah Philbrick
 ### Updated by: Alexa DeRosa
-### Last update date: 02/03/2020
-### Date: 10/21/2024
+### Last update date: 10/21/2024
 ### Purpose: Identifies investors and the type (small, medium, large, and institutional) of investor
 
 rm(list=ls())
@@ -28,7 +27,7 @@ setwd(data_path)
 #list.files()
 
 #change file name here
-warren_df <- read_csv('20241220_warren_speculative-investment-analysis-dataset-w-submarket.csv')
+warren_df <- read_csv('20250903_warren_speculative-investment-analysis-dataset-w-submarket.csv')
 
 ########## LLC Deduplication ##############
 # loading in metacorp tables resulting from Eric Huntley's analysis here: https://github.com/mit-spatial-action/who-owns-mass-processing
@@ -321,25 +320,30 @@ warren_df_5yr_final_mapc = warren_df_5yr_final %>%
 setwd(data_path)
 
 #with foreclosures all
-fwrite(warren_df_5yr_final, '20250109_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final, '20250903_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv')
+rm(warren_df_5yr_final)
 gc()
 
 #with foreclosures - MAPC
-fwrite(warren_df_5yr_final_mapc, '20250109_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final_mapc, '20250903_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv')
+rm(warren_df_5yr_final_mapc)
 gc()
 
 #without foreclosures all
 warren_df_5yr_final_fd <- warren_df_5yr_final %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_fd, '20250109_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final_fd, '20250903_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window-networks.csv')
+rm(warren_df_5yr_final_fd)
+gc()
 
 #without foreclosures - MAPC
 warren_df_5yr_final_mapc_fd <- warren_df_5yr_final_mapc %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_mapc_fd, '20250109_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window-networks.csv')
-
+fwrite(warren_df_5yr_final_mapc_fd, '20250903_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window-networks.csv')
+rm(warren_df_5yr_final_mapc_fd)
+gc()
 ########## archive #########
 #only using 4 year horizon
 # warren_df_2yr <- read_csv('20210607_warren_speculative-investment-analysis-dataset-w-submarket_2yr-window.csv')

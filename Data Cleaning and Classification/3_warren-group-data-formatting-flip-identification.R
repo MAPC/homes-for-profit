@@ -16,7 +16,7 @@ options('scipen' = 10)
 
 ### load in data ############
 setwd(data_path)
-warren <- fread("20241220_warren_speculative-investment-analysis-dataset_adjusted.csv",
+warren <- fread("20250903_warren_speculative-investment-analysis-dataset_adjusted.csv",
                 header=TRUE,
                 stringsAsFactors=FALSE,
                 colClasses=c('ct_id'='character'))
@@ -249,7 +249,7 @@ warren_detailed_final$flip_term = ifelse(warren_detailed_final$month_horizon %in
 ### output files ############
 setwd(data_path)
 # file name should match input file name with _detailed added
-fwrite(warren_detailed_final, '20241220_warren_speculative-investment-analysis-dataset_adjusted_detailed.csv')
+fwrite(warren_detailed_final, '20250903_warren_speculative-investment-analysis-dataset_adjusted_detailed.csv')
 
 ####Archive - Don't need to run
 #warren$date <- as.Date(warren$date) (in adjust data and price variable section)
