@@ -1,0 +1,18 @@
+---
+title: "annual-agg-righttothecity"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(tidycensus)
+
+df <- tidycensus::get_acs(
+    geography = "county subdivision",
+    table = "B01001",
+    year = 2023,
+    state = 25,
+    cache_table = T
+  )
+```
+
