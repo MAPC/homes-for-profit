@@ -10,14 +10,14 @@ rm(list=ls())
 pacman::p_load(tidyverse, data.table)
 
 # Data Paths
-wd <- "K:/DataServices/Datasets/Housing/Warren Group - Home Sales/Data/Tabular/Modified/"
+wd <- "K:/DataServices/Datasets/Housing/Warren Group - Home Sales/Data/Tabular/Modified/Processed/"
 data_path <- 'K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/'
 
 ### load in data #######
 setwd(wd)
 list.files()
 #change file name here
-warren <- fread("20250703_warren_group_2000_2024_residential_final.csv",
+warren <- fread("warren_group_2000_2025_residential_final.csv",
                 header=TRUE,
                 stringsAsFactors=FALSE,
                 colClasses=c('ct_id'='character'))
@@ -51,5 +51,5 @@ warren_df_final <- warren_df_sort %>%
 fwrite(warren_df_final,
        paste(data_path,
             # gsub("-",'',Sys.Date()),
-             '20250903_warren_speculative-investment-analysis-dataset.csv',
+             '2000_2025_warren_speculative-investment-analysis-dataset.csv',
              sep=''))
