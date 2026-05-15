@@ -17,10 +17,10 @@ data_path <- 'K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Res
 setwd(wd)
 list.files()
 #change file name here
-warren <- fread("warren_group_2000_2025_residential_final.csv",
+warren <- fread("warren_2000_2025_residential_final.csv",
                 header=TRUE,
                 stringsAsFactors=FALSE,
-                colClasses=c('ct_id'='character'))
+                )
 
 warren_df <- warren %>%
   mutate(fiscal_flag = ifelse(fy > year,
@@ -43,7 +43,7 @@ warren_df_sort <- warren_df[order(warren_df$address, warren_df$municipal, warren
 
 ### reorder dataframe
 warren_df_final <- warren_df_sort %>%
-  dplyr::select(ct_id, ct20_id, censustrct, muni_id, county_id, date, month, year, address, street, municipal,
+  dplyr::select(ct20_id, censustrct_mod, muni_id, county_id, date, month, year, address, street, municipal,
                 county, state, zipcode, price, price_adj,mortgage, mortgage2, buyer1, buyer2, seller1, seller2, 
                 proptype, everything())
 
