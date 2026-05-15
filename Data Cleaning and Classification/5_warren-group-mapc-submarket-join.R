@@ -27,7 +27,7 @@ submarket_shp = st_read("20200109_mapc-housing-submarkets.shp") |>
 setwd(data)
 #list.files()
 #changed from fread to csv because data was being lost
-warren <- read_csv("20250903_warren_speculative-investment-buyer-sort-analysis-dataset.csv") 
+warren <- read_csv("2000_2025_warren_speculative-investment-buyer-sort-analysis-dataset.csv") 
 
 # warren_id <- warren |> 
 #   #create unique ID to join on - when using data inclusive of 2023 on this field should already exist
@@ -105,7 +105,7 @@ rm(warren_house_final, warren_senate, senate_shp)
 
 # output csv
 setwd(data)
-fwrite(warren_join_final, "20250903_warren_speculative-investment-analysis-dataset-w-submarket.csv")
+fwrite(warren_join_final, "2000_2025_warren_speculative-investment-analysis-dataset-w-submarket.csv")
 
 ########### archive ########
 ##only need 4 year buy horizon
