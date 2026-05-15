@@ -27,7 +27,7 @@ submarket_shp = st_read("20200109_mapc-housing-submarkets.shp") |>
 setwd(data)
 #list.files()
 #changed from fread to csv because data was being lost
-warren <- read_csv("20250903_warren_speculative-investment-buyer-sort-analysis-dataset.csv") 
+warren <- read_csv("2000_2025_warren_speculative-investment-buyer-sort-analysis-dataset.csv") 
 
 # warren_id <- warren |> 
 #   #create unique ID to join on - when using data inclusive of 2023 on this field should already exist
@@ -38,10 +38,10 @@ warren <- read_csv("20250903_warren_speculative-investment-buyer-sort-analysis-d
 
 #making warren data spatial points
 warren_pts <- warren |> 
-  select(id, lat, lon) |> 
+  select(id, lat_final, lon_final) |> 
   #removing any missing latitudes as st_as_sf cannot run if lat or long is missing
-  filter(complete.cases(lat, lon)) |> #check how many data points are missing lat/long data
-  st_as_sf(coords = c('lon', 'lat'),
+  filter(complete.cases(lat_final, lon_final)) |> #check how many data points are missing lat/long data
+  st_as_sf(coords = c('lon_final', 'lat_final'),
            crs = st_crs(lat_lon_CRS),
            remove = FALSE) |> 
   #setting crs to match submarket shapefile
@@ -105,7 +105,7 @@ rm(warren_house_final, warren_senate, senate_shp)
 
 # output csv
 setwd(data)
-fwrite(warren_join_final, "20250903_warren_speculative-investment-analysis-dataset-w-submarket.csv")
+fwrite(warren_join_final, "2000_2025_warren_speculative-investment-analysis-dataset-w-submarket.csv")
 
 ########### archive ########
 ##only need 4 year buy horizon

@@ -27,7 +27,7 @@ setwd(data_path)
 #list.files()
 
 #change file name here
-warren_df <- read_csv('20250903_warren_speculative-investment-analysis-dataset-w-submarket.csv')
+warren_df <- read_csv('2000_2025_warren_speculative-investment-analysis-dataset-w-submarket.csv')
 
 ########## LLC Deduplication ##############
 # loading in metacorp tables resulting from Eric Huntley's analysis here: https://github.com/mit-spatial-action/who-owns-mass-processing
@@ -130,7 +130,6 @@ investor_count <- function(df, horizon_years){
                                            ifelse(df$final_name %in% med_investor_names, 'Medium',
                                                   ifelse(df$final_name %in% large_investor_names, 'Large',
                                                          ifelse(df$final_name %in% institutional_investor_names, 'Institutional', 'Non-count investor'))))
-  # create a categorical variable that categorizes a SELLER as a small, medium, large, or institutional investor
   df$investor_type_sale_count = ifelse(df$seller1_adj %in% small_investor_names, 'Small',
                                        ifelse(df$seller1_adj %in% med_investor_names, 'Medium',
                                               ifelse(df$seller1_adj %in% large_investor_names, 'Large',
@@ -312,28 +311,30 @@ warren_df_5yr_final = investor_overall(warren_df_5yr_count_llc_build_value_clean
 rm(warren_df_5yr_count_llc_build_value_clean)
 gc()
 
+warren_df_5yr_final_key <- warren_df_5yr_final |> 
+  left_join(muni_key, by = "municipal")
+
+
 # filter on MAPC region
-warren_df_5yr_final_mapc = warren_df_5yr_final %>%
+warren_df_5yr_final_mapc = warren_df_5yr_final_key %>%
   filter(mapc == 1)
 
 ######## output csvs
 setwd(data_path)
 
 #with foreclosures all
-fwrite(warren_df_5yr_final, '20250903_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv')
-rm(warren_df_5yr_final)
+fwrite(warren_df_5yr_final, '2000_2025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv')
 gc()
 
 #with foreclosures - MAPC
-fwrite(warren_df_5yr_final_mapc, '20250903_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv')
-rm(warren_df_5yr_final_mapc)
+fwrite(warren_df_5yr_final_mapc, '2000_2025_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv')
 gc()
 
 #without foreclosures all
 warren_df_5yr_final_fd <- warren_df_5yr_final %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_fd, '20250903_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final_fd, '2000_2025_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window-networks.csv')
 rm(warren_df_5yr_final_fd)
 gc()
 
@@ -341,7 +342,7 @@ gc()
 warren_df_5yr_final_mapc_fd <- warren_df_5yr_final_mapc %>%
   mutate(deedtype = ifelse(is.na(deedtype), 'UNKNOWN', deedtype)) %>% 
   filter(deedtype != 'FD')
-fwrite(warren_df_5yr_final_mapc_fd, '20250903_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window-networks.csv')
+fwrite(warren_df_5yr_final_mapc_fd, '2000_2025_warren_speculative-investment-analysis-dataset_mapc_withoutforeclosure_5yr-window-networks.csv')
 rm(warren_df_5yr_final_mapc_fd)
 gc()
 ########## archive #########
