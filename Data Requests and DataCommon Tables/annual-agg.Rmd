@@ -17,8 +17,7 @@ warren <- read_csv("2000_2025_warren_speculative-investment-analysis-dataset_wit
 
 ```{r}
 warren_select <- warren %>% 
-  select(muni_id, municipal, ct20_id, buyer1_adj, seller1_adj, lat_final, lon_final, year, cash_sale, price_adj, flip_horizon, flip_ind, buy_side_flip, sell_side_flip,
-         price_diff, price_diff_pch, restype, mapc_submarket, investor_type_purchase_count, investor_type_sale_count, investor_type_purchase_llc, investor_type_sale_llc, investor_type_purchase_building, investor_type_sale_building, investor_type_purchase_value, investor_type_sale_value, avg_annual_value, ID, investor_type_purchase, investor_type_sale) %>% 
+  select(ID, muni_id, municipal, ct20_id, year, restype, cash_sale, price, price_adj, flip_ind, investor_type_purchase_count, investor_type_sale_count, investor_type_purchase_llc, investor_type_sale_llc, investor_type_purchase_building, investor_type_sale_building, investor_type_purchase_value, investor_type_sale_value, investor_type_purchase, investor_type_sale) %>% 
   mutate(municipal = case_when(
     municipal == 'Attleborough' ~ 'Attleboro',
     municipal == 'Manchester-by-the-Sea' ~ 'Manchester',
@@ -39,8 +38,17 @@ create_tables <- function(df, geog){
   
   transactions_all = df %>% 
     group_by(!!rlang::ensym(geog), year) %>% 
-    summarize(trans = n())
+    summarize(sales_frq = n())
   
+  trans_filtered = df |> 
+    mutate(sales2_id = case_when(restype == "CON" & price >= 50000 & price <= 15000000 ~ 1,
+                                  restype != "CON" & price >= 50000 & price <= 100000000 ~ 1)) |> 
+    filter(sales2_id == 1) |> 
+    group_by(!!rlang::ensym(geog), year) %>% 
+    summarize(sales_frq2 = n(),
+              med_pr = sum(price),
+              med_pr_adj = sum(price_adj))
+    
   investor_all = df %>% 
     filter(investor_type_purchase != 'Non-investor') %>% 
     group_by(!!rlang::ensym(geog), year) %>% 
@@ -153,6 +161,7 @@ create_tables <- function(df, geog){
 
 #join summary tables
 warren_join = full_join(warren_all, transactions_all, by = c({{geog}}, 'year')) %>%
+    full_join(trans_filtered, by = c({{geog}}, 'year')) %>% 
     full_join(investor_all, by = c({{geog}}, 'year')) %>%
     full_join(investor_small, by = c({{geog}}, 'year')) %>%
     full_join(investor_medium, by = c({{geog}}, 'year')) %>%
@@ -169,7 +178,7 @@ warren_join = full_join(warren_all, transactions_all, by = c({{geog}}, 'year')) 
     full_join(r2f, by = c({{geog}}, 'year')) %>%
     full_join(r3f, by = c({{geog}}, 'year')) %>%
     #calculating %s
-    mutate(inv_p = inv_trans/trans, #investor transactions/total transactions
+    mutate(inv_p = inv_trans/sales_frq, #investor transactions/total transactions
            sm_inv_p = sm_inv/inv_trans, #small investor transactions/total investor transaction
            med_inv_p = med_inv/inv_trans, #medium investor transactions/total investor transactions
            lrg_inv_p = lrg_inv/inv_trans, #large investor transactions/total investor transactions
@@ -180,39 +189,45 @@ warren_join = full_join(warren_all, transactions_all, by = c({{geog}}, 'year')) 
            val_inv_p = value_inv/inv_trans, #value investor transactions/total investor transactions
            c_inv_p = count_inv/inv_trans, #count investor transactions/total investor transactions
            bld_inv_p = build_inv/inv_trans, #building investor transactions/total investor transactions
-           cash_p = cash_trans/trans, #cash transactions / total transactions
-           flip_p = flip_count/trans #flip transactions / total transactions 2002-202
+           cash_p = cash_trans/sales_frq, #cash transactions / total transactions
+           flip_p = flip_count/sales_frq #flip transactions / total transactions
     ) %>%
       relocate("li_inv", .after = inst_inv) %>%
       relocate(c("flip_count", "con_inv", "sf_inv", "r2f_inv", "r3f_inv"), .after = cash_trans) %>%
-      relocate(c("flip_p", "con_inv_p", "sf_inv_p", "r2f_inv_p", "r3f_inv_p"), .after = cash_p)
+      relocate(c("flip_p", "con_inv_p", "sf_inv_p", "r2f_inv_p", "r3f_inv_p"), .after = cash_p) |> 
+      #overwriting data for geographies with less then 5 sales
+      mutate(
+        med_pr = ifelse(sales_frq2 < 5, NA, med_pr),
+        med_pr_adj = ifelse(sales_frq2 < 5, NA, med_pr)
+      )
 
 return(warren_join)
 }
 
 ```
 
-```{r}
+
+```{r, message=FALSE, warning=FALSE}
 setwd(data_path)
 
 #create tables
 #run municipal tables
-annual_muni_agg <- create_tables(warren_select, "municipal") 
+annual_muni_agg <- create_tables(warren_select, "municipal")
 
-muni_publish <- annual_muni_agg |> 
+muni_publish <- annual_muni_agg |>
   arrange(municipal, year)
 
 #export muni table
 write.csv(muni_publish, 'warren_municipal_annual_agg_2000_2025.csv')
 ```
 
-```{r}
+```{r, message=FALSE}
 setwd(data_path)
 
 #run ct tables
-# annual_ct_agg <- create_tables(warren_select, 'ct20_id')
-# 
- ct_publish <- annual_ct_agg |> 
+annual_ct_agg <- create_tables(warren_select, 'ct20_id')
+
+ct_publish <- annual_ct_agg |> 
    arrange(ct20_id, year) |> 
    select(-c(muni_id))
 
