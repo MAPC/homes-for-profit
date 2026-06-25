@@ -1,0 +1,222 @@
+---
+title: "annual-agg"
+output: html_document
+---
+originally written for Right to the City data request, updated to use for new DataCommon tables
+
+```{r, warning=FALSE}
+library(tidyverse)
+options('scipen' = 10)
+
+data_path = "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
+
+setwd(data_path)
+
+warren <- read_csv("2000_2025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
+```
+
+```{r}
+warren_select <- warren %>% 
+  select(muni_id, municipal, ct20_id, buyer1_adj, seller1_adj, lat_final, lon_final, year, cash_sale, price_adj, flip_horizon, flip_ind, buy_side_flip, sell_side_flip,
+         price_diff, price_diff_pch, restype, mapc_submarket, investor_type_purchase_count, investor_type_sale_count, investor_type_purchase_llc, investor_type_sale_llc, investor_type_purchase_building, investor_type_sale_building, investor_type_purchase_value, investor_type_sale_value, avg_annual_value, ID, investor_type_purchase, investor_type_sale) %>% 
+  mutate(municipal = case_when(
+    municipal == 'Attleborough' ~ 'Attleboro',
+    municipal == 'Manchester-by-the-Sea' ~ 'Manchester',
+    TRUE ~ municipal
+  )) %>% 
+  #removing Devens - it is an army base not a municipality
+  filter(municipal != 'Devens')
+
+rm(warren)
+gc()
+```
+
+```{r, warning=FALSE}
+create_tables <- function(df, geog){
+  warren_all = df %>% 
+    select(muni_id,{{geog}}, year) %>% 
+    distinct()
+  
+  transactions_all = df %>% 
+    group_by(!!rlang::ensym(geog), year) %>% 
+    summarize(trans = n())
+  
+  investor_all = df %>% 
+    filter(investor_type_purchase != 'Non-investor') %>% 
+    group_by(!!rlang::ensym(geog), year) %>% 
+    summarize(inv_trans = n())
+  
+  investor_small = df %>% 
+    filter(year >= 2004 & year <= 2021) %>%
+    filter(investor_type_purchase == 'Small') %>% 
+    group_by(!!rlang::ensym(geog), year) %>% 
+    summarize(sm_inv = n())
+  
+  investor_medium = df %>%
+    filter(year >= 2004 & year <= 2021) %>%
+    filter(investor_type_purchase == 'Medium') %>%
+    group_by(!!rlang::ensym(geog), year) %>%
+    summarize(med_inv = n())
+
+  investor_large = df %>%
+    filter(year >= 2004 & year <= 2021) %>%
+    filter(investor_type_purchase == 'Large') %>%
+    group_by(!!rlang::ensym(geog), year) %>%
+    summarize(lrg_inv = n())
+
+  investor_inst = df %>%
+    filter(year >= 2004 & year <= 2021) %>%
+    filter(investor_type_purchase == 'Institutional') %>%
+    group_by(!!rlang::ensym(geog), year) %>%
+    summarize(inst_inv = n())
+
+  investor_llc = df %>%
+    filter(investor_type_purchase_llc == 'Small LLC') %>%
+    group_by(!!rlang::ensym(geog), year) %>%
+    summarize(llc_inv = n())
+
+  investor_value = df %>%
+    filter(investor_type_purchase_value != 'Non-value investor') %>%
+    group_by(!!rlang::ensym(geog), year) %>%
+    summarize(value_inv = n())
+
+  investor_count = df %>%
+    filter(year >= 2004 & year <= 2021) %>%
+    filter(investor_type_purchase_count != 'Non-count investor') %>%
+    group_by(!!rlang::ensym(geog), year) %>%
+    summarize(count_inv = n())
+
+  investor_building = df %>%
+    filter(investor_type_purchase_building == 'Building Investor') %>%
+    group_by(!!rlang::ensym(geog), year) %>%
+    summarize(build_inv = n())
+
+  cash_buyers = df %>%
+    filter(cash_sale == 1) %>%
+    group_by(!!rlang::ensym(geog), year) %>%
+    summarize(cash_trans = n())
+
+  #number of flips
+  flips = df %>%
+    filter(year >= 2002 & year <= 2021) %>%
+    filter(flip_ind == 1) %>%
+    group_by(!!rlang::ensym(geog), year) %>%
+    summarize(flip_count = n())
+
+  #count and % of condo investor purchases
+  condos = df %>%
+    filter(year >= 2004 & year <= 2021) %>%
+    filter(restype == 'CON') %>%
+    group_by(!!rlang::ensym(geog), year) %>%
+    mutate(con_trans = n()) %>%
+    filter(investor_type_purchase != 'Non-investor') %>%
+    mutate(con_inv = n(),
+           con_inv_p = con_inv/con_trans) %>%
+    select(!!rlang::ensym(geog), year, con_inv, con_inv_p) %>%
+    distinct()
+
+  #count and % of R1F investor purchases
+  single_fam = df %>%
+    filter(year >= 2004 & year <= 2021) %>%
+    filter(restype == 'R1F') %>%
+    group_by(!!rlang::ensym(geog), year) %>%
+    mutate(sf_trans = n()) %>%
+    filter(investor_type_purchase != 'Non-investor') %>%
+    mutate(sf_inv = n(),
+           sf_inv_p = sf_inv/sf_trans) %>%
+    select(!!rlang::ensym(geog), year, sf_inv, sf_inv_p) %>%
+    distinct()
+
+  #count and % of R2F investor purchases
+  r2f = df %>%
+    filter(year >= 2004 & year <= 2021) %>%
+    filter(restype == 'R2F') %>%
+    group_by(!!rlang::ensym(geog), year) %>%
+    mutate(r2f_trans = n()) %>%
+    filter(investor_type_purchase != 'Non-investor') %>%
+    mutate(r2f_inv = n(),
+           r2f_inv_p = r2f_inv/r2f_trans) %>%
+    select(!!rlang::ensym(geog), year, r2f_inv, r2f_inv_p) %>%
+    distinct()
+
+  #count and % of R3F investor purchases
+  r3f = df %>%
+    filter(year >= 2004 & year <= 2021) %>%
+    filter(restype == 'R3F') %>%
+    group_by(!!rlang::ensym(geog), year) %>%
+    mutate(r3f_trans = n()) %>%
+    filter(investor_type_purchase != 'Non-investor') %>%
+    mutate(r3f_inv = n(),
+           r3f_inv_p = r3f_inv/r3f_trans) %>%
+    select(!!rlang::ensym(geog), year, r3f_inv, r3f_inv_p) %>%
+    distinct()
+
+#join summary tables
+warren_join = full_join(warren_all, transactions_all, by = c({{geog}}, 'year')) %>%
+    full_join(investor_all, by = c({{geog}}, 'year')) %>%
+    full_join(investor_small, by = c({{geog}}, 'year')) %>%
+    full_join(investor_medium, by = c({{geog}}, 'year')) %>%
+    full_join(investor_large, by = c({{geog}}, 'year')) %>%
+    full_join(investor_inst,by = c({{geog}}, 'year')) %>%
+    full_join(investor_llc, by = c({{geog}}, 'year')) %>%
+    full_join(investor_value, by = c({{geog}}, 'year')) %>%
+    full_join(investor_count, by = c({{geog}}, 'year')) %>%
+    full_join(investor_building, by = c({{geog}}, 'year')) %>%
+    full_join(cash_buyers, by = c({{geog}}, 'year')) %>%
+    full_join(flips, by = c({{geog}}, 'year')) %>%
+    full_join(condos, by = c({{geog}}, 'year')) %>%
+    full_join(single_fam, by = c({{geog}}, 'year')) %>%
+    full_join(r2f, by = c({{geog}}, 'year')) %>%
+    full_join(r3f, by = c({{geog}}, 'year')) %>%
+    #calculating %s
+    mutate(inv_p = inv_trans/trans, #investor transactions/total transactions
+           sm_inv_p = sm_inv/inv_trans, #small investor transactions/total investor transaction
+           med_inv_p = med_inv/inv_trans, #medium investor transactions/total investor transactions
+           lrg_inv_p = lrg_inv/inv_trans, #large investor transactions/total investor transactions
+           inst_inv_p = inst_inv/inv_trans, #institutional investor transactions/total investor transactions
+           li_inv = lrg_inv + inst_inv, #total large and institutional transactions
+           li_inv_p = li_inv/inv_trans, #lrg + inst investor transactions/total investor transactions
+           llc_inv_p = llc_inv/inv_trans, #llc investor transactions/total investor transactions
+           val_inv_p = value_inv/inv_trans, #value investor transactions/total investor transactions
+           c_inv_p = count_inv/inv_trans, #count investor transactions/total investor transactions
+           bld_inv_p = build_inv/inv_trans, #building investor transactions/total investor transactions
+           cash_p = cash_trans/trans, #cash transactions / total transactions
+           flip_p = flip_count/trans #flip transactions / total transactions 2002-202
+    ) %>%
+      relocate("li_inv", .after = inst_inv) %>%
+      relocate(c("flip_count", "con_inv", "sf_inv", "r2f_inv", "r3f_inv"), .after = cash_trans) %>%
+      relocate(c("flip_p", "con_inv_p", "sf_inv_p", "r2f_inv_p", "r3f_inv_p"), .after = cash_p)
+
+return(warren_join)
+}
+
+```
+
+```{r}
+setwd(data_path)
+
+#create tables
+#run municipal tables
+annual_muni_agg <- create_tables(warren_select, "municipal") 
+
+muni_publish <- annual_muni_agg |> 
+  arrange(municipal, year)
+
+#export muni table
+write.csv(muni_publish, 'warren_municipal_annual_agg_2000_2025.csv')
+```
+
+```{r}
+setwd(data_path)
+
+#run ct tables
+# annual_ct_agg <- create_tables(warren_select, 'ct20_id')
+# 
+ ct_publish <- annual_ct_agg |> 
+   arrange(ct20_id, year) |> 
+   select(-c(muni_id))
+
+#export ct table
+write.csv(ct_publish, 'warren_ct_annual_agg_2000_2025.csv')
+```
+
