@@ -34,3 +34,4 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 homes-for-profit.Rproj
+.positai
