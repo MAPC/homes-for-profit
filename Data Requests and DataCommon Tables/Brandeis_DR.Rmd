@@ -2,109 +2,141 @@
 title: "annual-agg"
 output: html_document
 ---
-script for below Brandeis dat request
+script for below Brandeis data request
 
-- MAPC communities, aggregated annually, at the tract level: If possible, both 2010 and 2020 tracts. If that's not possible to do both, then 2010 only.
-- median sale price at the tract level annually
-- all investors / investor non-flips / all flips / investor flips
-- primary variables of interest: investor purchases, flips, and cash, so if there aren't enough observations for the other variables, like small/med/large/instit investors, then it would be fine to omit them.
+Notes on results: 
+- there are 385 2020 census tract + year combinations across 63 census tracts where median sales price is suppressed due to there being fewer than 5 sales in that census tract in the given year
+- there are 254 2010 census tract + year combinations across 43 census tracts where median sales price is suppressed due to there being fewer than 5 sales in that census tract in the given year
 
+
+Potential issue: There are some count fields that are NA, causing some percent fields (denoted by _p) to be NaN. It seems like there are some transactions missing an individual investor classification field which also seems to cause an NA in the overall investor classification. This seems to be an issue going back to the original Homes for Profit scripts and not with this code. This issue impacts about 4% of transaction records within the MAPC region.
 
 ```{r, warning=FALSE}
 library(tidyverse)
 options('scipen' = 10)
 
 data_path = "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
+export_path = "K:/DataServices/Projects/Data_Requests/2026/Brandeis_HFP"
 
 setwd(data_path)
 
-warren <- read_csv("2000_2025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
+#starting from mapc filtered file
+warren_mapc <- read_csv("2000_2025_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv")
 ```
 
  
 ```{r}
-warren_mapc <- warren |> filter(!is.na(mapc_submarket))
-
+#select only needed variables
 warren_select <- warren_mapc |>  
-  select(ID, muni_id, municipal, ct20_id, year, restype, cash_sale, price, price_adj, flip_ind, investor_type_purchase_count, investor_type_sale_count, investor_type_purchase_llc, investor_type_sale_llc, investor_type_purchase_building, investor_type_sale_building, investor_type_purchase_value, investor_type_sale_value, investor_type_purchase, investor_type_sale) %>% 
-  mutate(municipal = case_when(
-    municipal == 'Attleborough' ~ 'Attleboro',
-    municipal == 'Manchester-by-the-Sea' ~ 'Manchester',
-    TRUE ~ municipal
-  ))
+  select(ID, ct20_id, ct10_id, year, restype, cash_sale, price, price_adj, flip_ind, investor_type_purchase_count, investor_type_sale_count, investor_type_purchase_llc, investor_type_sale_llc, investor_type_purchase_building, investor_type_sale_building, investor_type_purchase_value, investor_type_sale_value, investor_type_purchase, investor_type_sale)
 
-rm(warren)
+rm(warren_mapc)
 gc()
 ```
 
 ```{r, warning=FALSE}
 create_tables <- function(df, geog){
+  #table to save all munis/geographies/years
   warren_all = df %>% 
-    select(muni_id,{{geog}}, year) %>% 
+    select({{geog}}, year) %>% 
     distinct()
-  
+ 
+   #total transaction count
   transactions_all = df %>% 
     group_by(!!rlang::ensym(geog), year) %>% 
     summarize(sales_frq = n())
   
+  #transaction count with outliers removed
   trans_filtered = df |> 
     mutate(sales2_id = case_when(restype == "CON" & price >= 50000 & price <= 15000000 ~ 1,
-                                  restype != "CON" & price >= 50000 & price <= 100000000 ~ 1)) |> 
+                                restype != "CON" & price >= 50000 & price <= 100000000 ~ 1)) |>
     filter(sales2_id == 1) |> 
     group_by(!!rlang::ensym(geog), year) %>% 
+    #calculating total sales and median price for sales excluding price outliers
     summarize(sales_frq2 = n(),
               med_pr = sum(price),
               med_pr_adj = sum(price_adj)) |> 
     mutate(med_pr = ifelse(sales_frq2 < 5, NA, med_pr),
            med_pr_adj = ifelse(sales_frq2 < 5, NA, med_pr_adj))
   
-  #creating needed variables
+  
   data_summary = df |> 
+    #creating flags to calculate variables
     mutate(
+      #all investors
       inv_trans_f = ifelse(investor_type_purchase != 'Non-investor', 1, 0),
+      #investors by size (within 5 year window)
       sm_inv_f = ifelse((year >= 2004 & year <= 2021) & investor_type_purchase == 'Small', 1, 0),
       med_inv_f = ifelse((year >= 2004 & year <= 2021) & investor_type_purchase == 'Medium', 1, 0),
       lrg_inv_f = ifelse((year >= 2004 & year <= 2021) & investor_type_purchase == 'Large', 1, 0),
       inst_inv_f = ifelse((year >= 2004 & year <= 2021) & investor_type_purchase == 'Institutional', 1, 0),
+      #investors by type
       inv_llc_f = ifelse(investor_type_purchase_llc == 'Small LLC', 1, 0),
       v_inv_f = ifelse(investor_type_purchase_value != 'Non-value investor', 1, 0),
       c_inv_f = ifelse((year >= 2004 & year <= 2021) & investor_type_purchase_count != 'Non-count investor', 1, 0),
       b_inv_f = ifelse(investor_type_purchase_count != 'Non-count investor', 1, 0),
-      flip_f = ifelse((year >= 2002 & year <= 2021) & flip_ind == 1, 1, 0),
-      con_f = ifelse((year >= 2004 & year <= 2021) & restype == 'CON'),
-      con_inv_f = ifelse((year >= 2004 & year <= 2021) & restype == 'CON' & investor_type_purchase != 'Non-investor'),
-      sf_f = ifelse((year >= 2004 & year <= 2021) & restype == 'R1F'),
-      sf_inv_f = ifelse((year >= 2004 & year <= 2021) & restype == 'R1F' & investor_type_purchase != 'Non-investor'),
-      r2f_f = ifelse((year >= 2004 & year <= 2021) & restype == 'R2F'),
-      r2f_inv_f = ifelse((year >= 2004 & year <= 2021) & restype == 'R2F' & investor_type_purchase != 'Non-investor'),
-      r3f_f = ifelse((year >= 2004 & year <= 2021) & restype == 'R3F'),
-      r3f_inv_f = ifelse((year >= 2004 & year <= 2021) & restype == 'R3F' & investor_type_purchase != 'Non-investor'),
-      inv_non_flip_f = ifelse((year >= 2002 & year <= 2021) & investor_type_purchase != 'Non-investor' & flip_ind == 0, 1, 0),
-      non_inv_flip_f = ifelse((year >= 2002 & year <= 2021) & flip_ind == 1 & investor_type_purchase == 'Non-investor')
+      #flips within 2 year flip window
+      flip_f = ifelse((year >= 2002 & year <= 2023) & flip_ind == 1, 1, 0),
+      #condo purchases within 5 year investor window
+      con_f = ifelse((year >= 2004 & year <= 2021) & restype == 'CON', 1, 0),
+      #condo purchases in 5 year window by investors
+      con_inv_f = ifelse((year >= 2004 & year <= 2021) & restype == 'CON' & investor_type_purchase != 'Non-investor', 1, 0),
+      #single family purchases within 5-year investor window
+      sf_f = ifelse((year >= 2004 & year <= 2021) & restype == 'R1F', 1, 0),
+      #single family purchases by investors within 5-year window
+      sf_inv_f = ifelse((year >= 2004 & year <= 2021) & restype == 'R1F' & investor_type_purchase != 'Non-investor', 1, 0),
+      #two-family purchases in 5 year window
+      r2f_f = ifelse((year >= 2004 & year <= 2021) & restype == 'R2F', 1, 0),
+      #two-family purchases by investors in 5 year window
+      r2f_inv_f = ifelse((year >= 2004 & year <= 2021) & restype == 'R2F' & investor_type_purchase != 'Non-investor', 1, 0),
+      #three-family purchases within 5 year window
+      r3f_f = ifelse((year >= 2004 & year <= 2021) & restype == 'R3F', 1, 0),
+      #three-family purchases by investors withing 5 year window
+      r3f_inv_f = ifelse((year >= 2004 & year <= 2021) & restype == 'R3F' & investor_type_purchase != 'Non-investor', 1, 0),
+      #investor purchases within 5-year window that were not flips
+      inv_non_flip_f = ifelse((year >= 2004 & year <= 2021) & investor_type_purchase != 'Non-investor' & flip_ind == 0, 1, 0),
+      #investor purchases within 5-year window that were flips
+      inv_flip_f = ifelse((year >= 2004 & year <= 2021) & investor_type_purchase != 'Non-investor' & flip_ind == 1, 1, 0)
     ) |> 
     group_by(!!rlang::ensym(geog), year) |>  
-    summarize(inv_trans = sum(inv_trans_f),
-              sm_inv = sum(sm_inv_f),
-              med_inv = sum(med_inv_f),
-              lrg_inv = sum(lrg_inv_f),
-              inst_inv = sum(inst_inv_f),
-              llc_inc = sum(inv_llc_f),
-              value_inv = sum(v_inv_f),
-              count_inv = sum(c_inv_f),
-              build_inv = sum(b_inv_f),
-              cash_trans = sum(cash_sale),
-              flip_count = sum(flip_f),
-              inv_non_flip = sum(inv_non_flip_f),
-              non_inv_flip = sum(non_inv_flip_f),
-              con_trans = sum(con_f),
-              con_inv = sum(con_inv_f),
-              sf_trans = sum(sf_f),
-              sf_inv = sum(sf_inv_f),
-              r2f_trans = sum(r2f_f),
-              r2f_inv = sum(r2f_inv_f),
-              r3f_trans = sum(r3f_f),
-              r3f_inv = sum(r3f_inv_f),
-              )
+    summarize(
+      #count of purchases that were investor transactions
+      inv_trans = sum(inv_trans_f),
+      #count of purchases that were investor transactions by size
+      sm_inv = sum(sm_inv_f),
+      med_inv = sum(med_inv_f),
+      lrg_inv = sum(lrg_inv_f),
+      inst_inv = sum(inst_inv_f),
+      #count of purchases that were investor transactions by type
+      llc_inv = sum(inv_llc_f),
+      value_inv = sum(v_inv_f),
+      count_inv = sum(c_inv_f),
+      build_inv = sum(b_inv_f),
+      #count of purchases that were cash sales
+      cash_trans = sum(cash_sale),
+      #count of purchases that were flips
+      flip_count = sum(flip_f),
+      #count of purchases by investors that were not flips
+      inv_non_flip = sum(inv_non_flip_f),
+      #count of purchases by non-investors that were flips
+      inv_flip = sum(inv_flip_f),
+      #count of purchases of condos
+      con_trans = sum(con_f),
+      #count of condo purchases by investors
+      con_inv = sum(con_inv_f),
+      #count of purchases of single family homes
+      sf_trans = sum(sf_f),
+      #count of single family home purchases by investors
+      sf_inv = sum(sf_inv_f),
+      #count of purchases of two family homes
+      r2f_trans = sum(r2f_f),
+      #count of two family home purchases by investors
+      r2f_inv = sum(r2f_inv_f),
+      #count of purchases of 3 family homes
+      r3f_trans = sum(r3f_f),
+      #count of three family home purchases by investors
+      r3f_inv = sum(r3f_inv_f)
+      )
 
 
 #join summary tables
@@ -125,10 +157,10 @@ warren_join = full_join(warren_all, transactions_all, by = c({{geog}}, 'year')) 
            bld_inv_p = build_inv/inv_trans, #building inv trans/tot inv trans
            cash_p = cash_trans/sales_frq, #cash trans / tot trans
            flip_p = flip_count/sales_frq, #flip trans / tot trans
-           con_inv_p = con_inv/con_trans, 
-           sf_inv_p = sf_inv/sf_trans,
-           r2f_inv_p = r2f_inv/r2f_trans,
-           r3f_inv_p = r3f_inv/r3f_trans,
+           con_inv_p = con_inv/con_trans, #inv condo trans/total condo trans
+           sf_inv_p = sf_inv/sf_trans, #inv sf trans/total sf trans
+           r2f_inv_p = r2f_inv/r2f_trans, #inv 2 family trans/total 2 family trans
+           r3f_inv_p = r3f_inv/r3f_trans, #inv 3 family trans/total 3 family trans
     ) %>%
       relocate("li_inv", .after = inst_inv) %>%
       relocate(c("flip_count", "con_inv", "sf_inv", "r2f_inv", "r3f_inv"), .after = cash_trans) %>%
@@ -145,31 +177,24 @@ return(warren_join)
 ```
 
 
-```{r, message=FALSE, warning=FALSE}
-setwd(data_path)
-
-#create tables
-#run municipal tables
-annual_muni_agg <- create_tables(warren_select, "municipal")
-
-muni_publish <- annual_muni_agg |>
-  arrange(municipal, year)
-
-#export muni table
-write.csv(muni_publish, 'warren_municipal_annual_agg_2000_2025.csv')
-```
-
 ```{r, message=FALSE}
-setwd(data_path)
+setwd(export_path)
 
 #run ct tables
-annual_ct_agg <- create_tables(warren_select, 'ct20_id')
+annual_ct20_agg <- create_tables(warren_select, 'ct20_id')
 
-ct_publish <- annual_ct_agg |> 
-   arrange(ct20_id, year) |> 
-   select(-c(muni_id))
+ct20_publish <- annual_ct20_agg |> 
+   arrange(ct20_id, year)
 
 #export ct table
-write.csv(ct_publish, 'warren_ct_annual_agg_2000_2025.csv')
+write.csv(ct20_publish, 'ct20_annual_2000_2025.csv')
+
+annual_ct10_agg <- create_tables(warren_select, 'ct10_id')
+
+ct10_publish <- annual_ct10_agg |> 
+   arrange(ct10_id, year)
+
+#export ct table
+write.csv(ct10_publish, 'ct10_annual_2000_2025.csv')
 ```
 
