@@ -1,0 +1,196 @@
+---
+title: "WGBH"
+output: html_document
+---
+
+To do: re-run and check 
+
+Request:
+1. the number of purchases and the percentages of transactions by those investors
+- for the entire study period and 2015-2025
+2. the names of investors and their businesses and addresses for properties purchased
+- LLC names and addresses; time period: 2015-2025 
+
+Main geography: Lynn
+Also interested: Haverhill, Lowell
+
+```{r, warning=FALSE}
+library(tidyverse)
+options('scipen' = 10)
+
+data_path = "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
+export_path = "K:/DataServices/Projects/Data_Requests/2026/WGBH_Neisloss"
+
+setwd(data_path)
+
+#starting from mapc filtered file
+warren <- read_csv("2000_2025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
+
+warren_clean <- warren |> 
+  #clean up issue of missing inv_type_purchase due to NAs
+  mutate(
+    #make NAs a string
+    investor_type_purchase_value = ifelse(is.na(investor_type_purchase_value), "NA", investor_type_purchase_value),
+    #redefine final investor category for cases where is is missing
+    investor_type_purchase = ifelse(!is.na(investor_type_purchase), investor_type_purchase, 
+                              ifelse((investor_type_purchase_value=='Institutional' | investor_type_purchase_count=='Institutional'),'Institutional',
+                                ifelse((investor_type_purchase_value=='Large' | investor_type_purchase_count=='Large'), 'Large',
+                                  ifelse((investor_type_purchase_value=='Medium'| investor_type_purchase_count=='Medium'), 'Medium',
+                                   ifelse((investor_type_purchase_value=='Small'| investor_type_purchase_count=='Small' | investor_type_purchase_llc=='Small LLC' | investor_type_purchase_building=='Building Investor'),'Small', 'Non-investor')))))
+  )
+
+rm(warren)
+gc()
+```
+
+#Identify investors
+```{r}
+investors <- warren_clean |> 
+  #filter all transactions to given year and munis
+  filter(year >= 2015) |>
+  #select needed variables
+  select(buyer1_adj, municipal, investor_type_purchase, investor_type_purchase_llc, investor_type_purchase_building, investor_type_purchase_count, investor_type_purchase_value, network_group) |> 
+  #filter to only LLC investors
+  filter(investor_type_purchase_llc == "Small LLC")
+
+lynn_investors <- investors |> 
+  filter(municipal == "Lynn") |> 
+  #remove duplicates
+  distinct() 
+  
+haverhill_investors <- investors |> 
+  filter(municipal == "Haverhill") |> 
+  #remove duplicates
+  distinct() 
+  
+lowell_investors <- investors |> 
+  filter(municipal == "Lowell") |> 
+  #remove duplicates
+  distinct() 
+  
+all_investors <- rbind(lynn_investors, haverhill_investors, lowell_investors)
+
+#how many ownership networks do these investors really represent?
+investors |> count(network_group)
+
+setwd(export_path)
+write.csv(lynn_investors, "lynn_investors.csv")
+write.csv(haverhill_investors, "haverhill_investors.csv")
+write.csv(lowell_investors, "lowell_investors.csv")
+
+rm(investors, lynn_investors, haverhill_investors, lowell_investors)
+gc()
+```
+1,654 unique LLC buyer names across 543 network groups
+"all_investors" will include duplicates when investors have made purchases in more than one of the 3 included municipalities
+
+#Network table filtered to investors of interest - not actually using this
+```{r}
+# Get crosswalk from network to owner
+who_owns_path <- "C:/Users/aderosa/OneDrive - Metropolitan Area Planning Council/Shared Documents - Data Services/_Current Projects/_Housing/LLC Owner Networks - NNIP/04_Data/who-owns-csvs/"
+setwd(who_owns_path)
+owners_networks <- read_csv("owners.csv")
+
+owners_inst <- owners_networks |>
+  filter(inst == TRUE) |>
+  distinct(name, cosine_group, network_group)
+
+rm(owners_networks)
+# what information is in other network analysis tables that would be of interest for this request?
+```
+
+#Statewide purchases by Lynn, Haverhill, Lowell investors
+```{r}
+#total number of purchases made by the investor in MA
+ma_inv_purchases <- warren_clean |> 
+  select(buyer1_adj, network_group, year) |> 
+  filter(buyer1_adj %in% all_investors$buyer1_adj) |> 
+  group_by(buyer1_adj) |> 
+  #count for full study period
+  mutate(ma_inv_pur_00_25 = n()) |> 
+  filter(year >= 2015) |> 
+  #count 2015-2025
+  mutate(ma_inv_pur_15_25 = n()) |> 
+  select(-c(year)) |> 
+  distinct()
+
+#total number of purchases made by the investor network in MA
+ma_ntwk_purchases <- warren_clean |> 
+  select(network_group, year, investor_type_purchase) |> 
+  filter(network_group %in% all_investors$network_group & !is.na(network_group)) |> 
+  group_by(network_group) |> 
+  #count for full study period
+  mutate(ma_inv_pur_00_25 = n()) |> 
+  filter(year >= 2015) |> 
+  #count 2015-2025
+  mutate(ma_inv_pur_15_25 = n()) |> 
+  select(-c(year)) |> 
+  distinct()
+
+setwd(export_path)
+write.csv(ma_inv_purchases, "ma_investor_purchase_summary.csv")
+write.csv(ma_ntwk_purchases, "ma_network_purchase_summary.csv")
+gc()
+```
+1,654 uniquely named investor llcs, 543 unique networks
+#municipal purchases by investors
+```{r}
+warren_muni <- warren_clean |> 
+  filter(municipal == "Lynn" | municipal == "Haverhill" | municipal == "Lowell") 
+
+#count of purchases by investor by muni
+inv_purchases <- warren_muni |> 
+  select(buyer1_adj, network_group, municipal, year) |> 
+  group_by(municipal) |> 
+  #muni transaction count for full study period
+  mutate(muni_00_25 = n(),
+         inv_f_00_25 = ifelse(buyer1_adj %in% all_investors$buyer1_adj, 1, 0)) |> 
+  filter(year >= 2015) |> 
+  #muni transaction count 2015-2025
+  mutate(muni_15_25 = n(),
+         inv_f_15_25 = ifelse(buyer1_adj %in% all_investors$buyer1_adj, 1, 0)) |> 
+  select(-c(year)) |> 
+  group_by(municipal, buyer1_adj) |> 
+  mutate(
+    #count inv purchases in muni
+    inv_pur_00_25 = sum(inv_f_00_25),
+    #percent inv purchases in muni
+    p_inv_00_25 = sum(inv_f_00_25)/muni_00_25,
+    #count inv purchases in muni (2015-2025)
+    inv_pur_15_25 = sum(inv_f_15_25),
+    #percent inv purchases in muni (2015-2025)
+    p_inv_15_25 = sum(inv_f_15_25)/muni_15_25,
+  ) |> 
+  select(-c(inv_f_00_25, inv_f_15_25))
+
+#count of purchases by investor by muni
+ntwk_purchases <- warren_muni |> 
+  select(network_group, municipal, year) |> 
+  group_by(municipal) |> 
+  #muni transaction count for full study period
+  mutate(muni_00_25 = n(),
+         inv_f_00_25 = ifelse(network_group %in% all_investors$network_group, 1, 0)) |> 
+  filter(year >= 2015) |> 
+  #muni transaction count 2015-2025
+  mutate(muni_15_25 = n(),
+         inv_f_15_25 = ifelse(network_group %in% all_investors$network_group, 1, 0)) |> 
+  select(-c(year)) |> 
+  group_by(municipal, network_group) |> 
+  mutate(
+    #count inv purchases in muni
+    inv_pur_00_25 = sum(inv_f_00_25),
+    #percent inv purchases in muni
+    p_inv_00_25 = sum(inv_f_00_25)/muni_00_25,
+    #count inv purchases in muni (2015-2025)
+    inv_pur_15_25 = sum(inv_f_15_25),
+    #percent inv purchases in muni (2015-2025)
+    p_inv_15_25 = sum(inv_f_15_25)/muni_15_25,
+  ) |> 
+  select(-c(inv_f_00_25, inv_f_15_25))
+
+setwd(export_path)
+write.csv(inv_purchases, "investor_purchase_summary.csv")
+write.csv(ntwk_purchases, "network_purchase_summary.csv")
+gc()
+```
+
