@@ -2,7 +2,7 @@
 title: "annual-agg"
 output: html_document
 ---
-script for below Brandeis data request
+script for Brandeis data request
 
 Notes on results: 
 - there are 385 2020 census tract + year combinations across 63 census tracts where median sales price is suppressed due to there being fewer than 5 sales in that census tract in the given year
@@ -10,6 +10,7 @@ Notes on results:
 
 
 Potential issue: There are some count fields that are NA, causing some percent fields (denoted by _p) to be NaN. It seems like there are some transactions missing an individual investor classification field which also seems to cause an NA in the overall investor classification. This seems to be an issue going back to the original Homes for Profit scripts and not with this code. This issue impacts about 4% of transaction records within the MAPC region.
+- the fix: lines 26-37 replace any NA values in the final investor definition field (investor_type_purchase) due to the NA value in the value investor field with the highest investor classification between the other 3 investor types. While a full fix of the issue will require a rerun of our entire Homes for Profit data process, this fix should provide a more accurate picture of who is an investor and who isn't even if the overall size my be off slightly rather than the final investor category being listed as NA in cases where the value investor definition was NA but other investor definitions were met.
 
 ```{r, warning=FALSE}
 library(tidyverse)
@@ -22,15 +23,31 @@ setwd(data_path)
 
 #starting from mapc filtered file
 warren_mapc <- read_csv("2000_2025_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv")
+
+warren_mapc_clean <- warren_mapc |> 
+  #clean up issue of missing inv_type_purchase due to NAs
+  mutate(
+    #make NAs a string
+    investor_type_purchase_value = ifelse(is.na(investor_type_purchase_value), "-99", investor_type_purchase_value),
+    #redefine final investor category for cases where is is missing
+    investor_type_purchase = ifelse(!is.na(investor_type_purchase), investor_type_purchase, 
+                              ifelse((investor_type_purchase_value=='Institutional' | investor_type_purchase_count=='Institutional'),'Institutional',
+                                ifelse((investor_type_purchase_value=='Large' | investor_type_purchase_count=='Large'), 'Large',
+                                  ifelse((investor_type_purchase_value=='Medium'| investor_type_purchase_count=='Medium'), 'Medium',
+                                   ifelse((investor_type_purchase_value=='Small'| investor_type_purchase_count=='Small' | investor_type_purchase_llc=='Small LLC' | investor_type_purchase_building=='Building Investor'),'Small', 'Non-investor')))))
+  )
+
+rm(warren_mapc)
+gc()
 ```
 
  
 ```{r}
 #select only needed variables
-warren_select <- warren_mapc |>  
+warren_select <- warren_mapc_clean |>  
   select(ID, ct20_id, ct10_id, year, restype, cash_sale, price, price_adj, flip_ind, investor_type_purchase_count, investor_type_sale_count, investor_type_purchase_llc, investor_type_sale_llc, investor_type_purchase_building, investor_type_sale_building, investor_type_purchase_value, investor_type_sale_value, investor_type_purchase, investor_type_sale)
 
-rm(warren_mapc)
+rm(warren_mapc_clean)
 gc()
 ```
 
@@ -176,24 +193,26 @@ return(warren_join)
 
 ```
 
-
+run function
 ```{r, message=FALSE}
-setwd(export_path)
-
 #run ct tables
 annual_ct20_agg <- create_tables(warren_select, 'ct20_id')
 
 ct20_publish <- annual_ct20_agg |> 
    arrange(ct20_id, year)
 
-#export ct table
-write.csv(ct20_publish, 'ct20_annual_2000_2025.csv')
-
 annual_ct10_agg <- create_tables(warren_select, 'ct10_id')
 
 ct10_publish <- annual_ct10_agg |> 
    arrange(ct10_id, year)
 
+```
+
+write tables
+```{r}
+setwd(export_path)
+#export ct table
+write.csv(ct20_publish, 'ct20_annual_2000_2025.csv')
 #export ct table
 write.csv(ct10_publish, 'ct10_annual_2000_2025.csv')
 ```
