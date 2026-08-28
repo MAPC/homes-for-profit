@@ -107,8 +107,12 @@ ma_inv_purchases <- warren_clean |>
   filter(buyer1_adj %in% all_investors$buyer1_adj) |> 
   group_by(buyer1_adj) |> 
   #count for full study period
-  mutate(ma_inv_pur_00_25 = n()) |> 
-  filter(year >= 2015) |> 
+  mutate(ma_inv_pur_00_25 = n()) |>
+```
+
+
+```{r}
+filter(year >= 2015) |> 
   #count 2015-2025
   mutate(ma_inv_pur_15_25 = n()) |> 
   select(-c(year)) |> 
