@@ -16,6 +16,7 @@ Also interested: Haverhill, Lowell
 
 ```{r, warning=FALSE}
 library(tidyverse)
+library(mapcdatakeys)
 options('scipen' = 10)
 
 data_path = "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Research/Speculative Investment/Data/"
@@ -42,6 +43,164 @@ warren_clean <- warren |>
 rm(warren)
 gc()
 ```
+
+Adding helpful fields
+```{r}
+crosswalk <- mapcdatakeys::all_muni_data_keys |> 
+  select(muni_id, cmtyp08, mapc)
+
+warren_plus <- warren_clean |> 
+  left_join(crosswalk, by = "muni_id") |> 
+  #creating flags to count 2 and 3 family purchases
+  mutate(
+    r2f_flag = ifelse(restype == "R2F", 1, 0),
+    r3f_flag = ifelse(restype == "R3F", 1, 0),
+    r2f_inv_f = ifelse(restype == "R2F" & investor_type_purchase != "Non-investor", 1, 0),
+    r3f_inv_f = ifelse(restype == "R3F" & investor_type_purchase != "Non-investor", 1, 0)
+  )
+
+gateway_cities <- c("Attleboro", "Barnstable", "Brockton", "Chelsea", "Chicopee", "Everett", "Fall River", "Fitchburg", "Haverhill", "Holyoke", "Lawrence", "Leominster", "Lowell", "Lynn", "Malden", "Methuen", "New Bedford", "Peabody", "Pittsfield", "Quincy", "Revere", "Salem", "Springfield", "Taunton", "Westfield", "Worcester")
+
+rm(warren_clean)
+gc()
+```
+
+What percent of sales were 2 and 3 family?
+```{r}
+#statewide
+sales_p <- warren_plus |> 
+  #count of all sales in the muni each year
+  group_by(municipal, year) |> 
+  mutate(tot_sales = n()) |> 
+  group_by(municipal, year, restype) |> 
+  mutate(restype_sales = n(),
+    r2f_count = sum(r2f_flag),
+    r3f_count = sum(r3f_flag),
+    r2f_inv = sum(r2f_inv_f),
+    r3f_inv = sum(r3f_inv_f),
+    sales_p = round(restype_sales/tot_sales, digits = 2)) |> 
+  select(municipal, year, restype, r2f_count, r2f_inv, r3f_count, r3f_inv, sales_p, tot_sales) |> 
+  #filter to just some restypes
+  filter(restype == "R1F" | restype == "R2F" | restype == "R3F") |> 
+  distinct() |> 
+  arrange(municipal, year)
+
+#cities of interest
+sales_p_gateway <- warren_plus |> 
+  filter(municipal %in% gateway_cities | (cmtyp08 == "Regional Urban Center" & mapc == 1)) |> 
+  filter(year > 2010) |> 
+  #count of all sales in the muni each year
+  group_by(municipal, year) |> 
+  mutate(tot_sales = n()) |> 
+  group_by(municipal, year, restype) |> 
+  mutate(restype_sales = n(),
+    r2f_count = sum(r2f_flag),
+    r3f_count = sum(r3f_flag),
+    r2f_inv = sum(r2f_inv_f),
+    r3f_inv = sum(r3f_inv_f),
+    sales_p = round(restype_sales/tot_sales, digits = 2)) |> 
+  select(municipal, year, restype, sales_p, tot_sales) |> 
+  #filter to just some restypes
+  filter(restype == "R1F" | restype == "R2F" | restype == "R3F") |> 
+  distinct() |> 
+  #filter out any muni/year combos with less than 10 r2f or r3f sales
+#  filter(r2f_count + r3f_count >= 10) |>
+  #create field to see how many years mu
+  arrange(municipal, year, restype)
+```
+
+
+2 and 3 family trends
+```{r}
+#statewide
+twof_threef <- warren_plus |> 
+  group_by(municipal, year) |> 
+  #create new indexes
+  mutate(
+  #large and institutional investors
+  lrg_inst_r2f = ifelse((investor_type_purchase == "Large" | investor_type_purchase == "Institutional") & restype == "R2F", 1, 0),
+  lrg_inst_r3f = ifelse((investor_type_purchase == "Large" | investor_type_purchase == "Institutional") & restype == "R3F", 1, 0),
+  #llc/metacorp inv
+  llc_net2 = ifelse((buyer_llc_ind == 1 | !is.na(network_group)) & restype == "R2F", 1, 0),
+  llc_net3 = ifelse((buyer_llc_ind == 1 | !is.na(network_group)) & restype == "R3F", 1, 0)
+  ) |> 
+  #create summary table of variables to compare
+  summarize(
+    r2f_count = sum(r2f_flag),
+    r3f_count = sum(r3f_flag),
+    r2f_inv = sum(r2f_inv_f),
+    r3f_inv = sum(r3f_inv_f),
+    r2f_li_inv = sum(lrg_inst_r2f),
+    r3f_li_inv = sum(lrg_inst_r3f),
+    r2f_llc_net = sum(llc_net2),
+    r3f_llc_net = sum(llc_net3)
+  ) |> 
+  arrange(municipal, year) |> 
+  mutate(
+    #rate of investor transactions
+    r2f_inv_p = round(r2f_inv/r2f_count, digits = 2),
+    r3f_inv_p = round(r3f_inv/r3f_count, digits = 2),
+    #rate of large/inst inv transactions
+    r2f_li_inv_p = round(r2f_li_inv/r2f_count, digits = 2),
+    r3f_li_inv_p = round(r3f_li_inv/r3f_count, digits = 2),
+    #rate of LLC/network buyers
+    r2f_llc_net_p = round(r2f_llc_net/r2f_count, digits = 2),
+    r3f_llc_net_p = round(r3f_llc_net/r3f_count, digits = 2),
+    )
+  
+#cities of interest
+twof_threef_gateway <- warren_plus |> 
+  filter(municipal %in% gateway_cities | (cmtyp08 == "Regional Urban Center" & mapc == 1)) |> 
+  #filter(year > 2010) |> 
+  group_by(municipal, year) |> 
+  #create new indexes
+  mutate(
+  #large and institutional investors
+  lrg_inst_r2f = ifelse((investor_type_purchase == "Large" | investor_type_purchase == "Institutional") & restype == "R2F", 1, 0),
+  lrg_inst_r3f = ifelse((investor_type_purchase == "Large" | investor_type_purchase == "Institutional") & restype == "R3F", 1, 0),
+  #llc/metacorp inv
+  llc_net2 = ifelse((buyer_llc_ind == 1 | !is.na(network_group)) & restype == "R2F", 1, 0),
+  llc_net3 = ifelse((buyer_llc_ind == 1 | !is.na(network_group)) & restype == "R3F", 1, 0)
+  ) |> 
+  #create summary table of variables to compare
+  summarize(
+    r2f_count = sum(r2f_flag),
+    r3f_count = sum(r3f_flag),
+    r2f_inv = sum(r2f_inv_f),
+    r3f_inv = sum(r3f_inv_f),
+    r2f_li_inv = sum(lrg_inst_r2f),
+    r3f_li_inv = sum(lrg_inst_r3f),
+    r2f_llc_net = sum(llc_net2),
+    r3f_llc_net = sum(llc_net3)
+  ) |> 
+  arrange(municipal, year) |> 
+  mutate(
+    #rate of investor transactions
+    r2f_inv_p = round(r2f_inv/r2f_count, digits = 2),
+    r3f_inv_p = round(r3f_inv/r3f_count, digits = 2),
+    #rate of large/inst inv transactions
+    r2f_li_inv_p = round(r2f_li_inv/r2f_count, digits = 2),
+    r3f_li_inv_p = round(r3f_li_inv/r3f_count, digits = 2),
+    #rate of LLC/network buyers
+    r2f_llc_net_p = round(r2f_llc_net/r2f_count, digits = 2),
+    r3f_llc_net_p = round(r3f_llc_net/r3f_count, digits = 2),
+    ) |> 
+  #filter to just years with at least 10 relevant sales
+  filter(r2f_count + r3f_count >= 10) |> 
+  group_by(municipal) |> 
+  mutate(
+    #count number of years each muni meets criteria for
+    year_count = n()
+  )
+```
+
+#Exports
+```{r}
+setwd(export_path)
+
+write.csv(twof_threef_gateway, paste0(export_path, "/question1.csv"))
+```
+
 
 #Identify investors
 ```{r}
@@ -110,7 +269,7 @@ ma_inv_purchases <- warren_clean |>
   mutate(ma_inv_pur_00_25 = n()) |>
 ```
 
-
+#purchases by investors in munis of interest statewide
 ```{r}
 filter(year >= 2015) |> 
   #count 2015-2025
@@ -137,6 +296,7 @@ write.csv(ma_ntwk_purchases, "ma_network_purchase_summary.csv")
 gc()
 ```
 1,654 uniquely named investor llcs, 543 unique networks
+
 #municipal purchases by investors
 ```{r}
 warren_muni <- warren_clean |> 
