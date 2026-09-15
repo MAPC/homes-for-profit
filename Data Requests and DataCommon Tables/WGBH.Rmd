@@ -14,6 +14,19 @@ Request:
 Main geography: Lynn
 Also interested: Haverhill, Lowell
 
+Notes from check-in w/Sarah
+- all investors
+- large and institutional 
+- don't want to actually use
+- statewide or MAPC wide version of table I shared with Sarah
+
+To do:
+- top 10 investors in gateway cities + what munis they bought property in
+- same table you sent Sarah but statewide
+- chart % of 2 and 3 family 
+--- metric for 2+3 family investor percent
+--- split charts  
+
 ```{r, warning=FALSE}
 library(tidyverse)
 library(mapcdatakeys)
@@ -114,7 +127,8 @@ sales_p_gateway <- warren_plus |>
 ```{r}
 #statewide
 twof_threef <- warren_plus |> 
-  group_by(municipal, year) |> 
+  group_by(#municipal, 
+    year) |> 
   #create new indexes
   mutate(
   #large and institutional investors
@@ -135,7 +149,8 @@ twof_threef <- warren_plus |>
     r2f_llc_net = sum(llc_net2),
     r3f_llc_net = sum(llc_net3)
   ) |> 
-  arrange(municipal, year) |> 
+  arrange(#municipal, 
+    year) |> 
   mutate(
     #rate of investor transactions
     r2f_inv_p = round(r2f_inv/r2f_count, digits = 2),
@@ -194,11 +209,35 @@ twof_threef_gateway <- warren_plus |>
   )
 ```
 
+Top 10 gateway cities investors
+```{r}
+top_inv <- warren_plus |> 
+  #filtering to gateway cities and mapc regional urban centers
+  filter(municipal %in% gateway_cities | (cmtyp08 == "Regional Urban Center" & mapc == 1)) |> 
+  group_by(final_name) |> 
+  summarize(total_purchases = n()) |> 
+  #showing only investors with more than 100 transactions
+  filter(total_purchases > 100) |> 
+  arrange(desc(total_purchases))
+
+top_10 <- top_inv |> 
+  slice(0:10)
+
+top_inv_munis <- warren_plus |> 
+  filter(final_name %in% top_10$final_name) |> 
+  group_by(municipal) |> 
+  summarize(count = n())
+  
+```
+
+
 #Exports
 ```{r}
 setwd(export_path)
 
-write.csv(twof_threef_gateway, paste0(export_path, "/question1.csv"))
+write.csv(twof_threef_gateway, "question1.csv")
+
+write.csv(twof_threef, "question1_statewide.csv")
 ```
 
 
@@ -248,9 +287,15 @@ gc()
 # Get crosswalk from network to owner
 who_owns_path <- "C:/Users/aderosa/OneDrive - Metropolitan Area Planning Council/Shared Documents - Data Services/_Current Projects/_Housing/LLC Owner Networks - NNIP/04_Data/who-owns-csvs/"
 setwd(who_owns_path)
-owners_networks <- read_csv("owners.csv")
+owner_networks <- read_csv("owners.csv")
 
-owners_inst <- owners_networks |>
+top_10_network_xw <- owner_networks |> 
+  filter(network_group %in% top_10$final_name) |> 
+  select(name, network_group) |> 
+  distinct() |> 
+  arrange(network_group)
+
+owner_inst <- owner_networks |>
   filter(inst == TRUE) |>
   distinct(name, cosine_group, network_group)
 
@@ -356,5 +401,14 @@ setwd(export_path)
 write.csv(inv_purchases, "investor_purchase_summary.csv")
 write.csv(ntwk_purchases, "network_purchase_summary.csv")
 gc()
+```
+
+#Export
+```{r}
+setwd(export_path)
+
+write.csv(top_10, "top_10_investors.csv")
+write.csv(top_10_network_xw, "top_10_networks_to_names.csv")
+write.csv(top_inv_munis, "muni_purchase_count_top_10_inv.csv")
 ```
 
