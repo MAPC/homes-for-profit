@@ -23,31 +23,15 @@ setwd(data_path)
 
 #starting from mapc filtered file
 warren_mapc <- read_csv("2000_2025_warren_speculative-investment-analysis-dataset_mapc_withforeclosure_5yr-window-networks.csv")
-
-warren_mapc_clean <- warren_mapc |> 
-  #clean up issue of missing inv_type_purchase due to NAs
-  mutate(
-    #make NAs a string
-    investor_type_purchase_value = ifelse(is.na(investor_type_purchase_value), "-99", investor_type_purchase_value),
-    #redefine final investor category for cases where is is missing
-    investor_type_purchase = ifelse(!is.na(investor_type_purchase), investor_type_purchase, 
-                              ifelse((investor_type_purchase_value=='Institutional' | investor_type_purchase_count=='Institutional'),'Institutional',
-                                ifelse((investor_type_purchase_value=='Large' | investor_type_purchase_count=='Large'), 'Large',
-                                  ifelse((investor_type_purchase_value=='Medium'| investor_type_purchase_count=='Medium'), 'Medium',
-                                   ifelse((investor_type_purchase_value=='Small'| investor_type_purchase_count=='Small' | investor_type_purchase_llc=='Small LLC' | investor_type_purchase_building=='Building Investor'),'Small', 'Non-investor')))))
-  )
-
-rm(warren_mapc)
-gc()
 ```
 
  
 ```{r}
 #select only needed variables
-warren_select <- warren_mapc_clean |>  
+warren_select <- warren_mapc |>  
   select(ID, ct20_id, ct10_id, year, restype, cash_sale, price, price_adj, flip_ind, investor_type_purchase_count, investor_type_sale_count, investor_type_purchase_llc, investor_type_sale_llc, investor_type_purchase_building, investor_type_sale_building, investor_type_purchase_value, investor_type_sale_value, investor_type_purchase, investor_type_sale)
 
-rm(warren_mapc_clean)
+rm(warren_mapc)
 gc()
 ```
 
@@ -71,8 +55,8 @@ create_tables <- function(df, geog){
     group_by(!!rlang::ensym(geog), year) %>% 
     #calculating total sales and median price for sales excluding price outliers
     summarize(sales_frq2 = n(),
-              med_pr = sum(price),
-              med_pr_adj = sum(price_adj)) |> 
+              med_pr = median(price, na.rm = TRUE),
+              med_pr_adj = median(price_adj, na.rm = TRUE)) |> 
     mutate(med_pr = ifelse(sales_frq2 < 5, NA, med_pr),
            med_pr_adj = ifelse(sales_frq2 < 5, NA, med_pr_adj))
   
@@ -91,7 +75,7 @@ create_tables <- function(df, geog){
       inv_llc_f = ifelse(investor_type_purchase_llc == 'Small LLC', 1, 0),
       v_inv_f = ifelse(investor_type_purchase_value != 'Non-value investor', 1, 0),
       c_inv_f = ifelse((year >= 2004 & year <= 2021) & investor_type_purchase_count != 'Non-count investor', 1, 0),
-      b_inv_f = ifelse(investor_type_purchase_count != 'Non-count investor', 1, 0),
+      b_inv_f = ifelse(investor_type_purchase_building != 'Non-building investor', 1, 0),
       #flips within 2 year flip window
       flip_f = ifelse((year >= 2002 & year <= 2023) & flip_ind == 1, 1, 0),
       #condo purchases within 5 year investor window
@@ -118,41 +102,41 @@ create_tables <- function(df, geog){
     group_by(!!rlang::ensym(geog), year) |>  
     summarize(
       #count of purchases that were investor transactions
-      inv_trans = sum(inv_trans_f),
+      inv_trans = sum(inv_trans_f, na.rm = TRUE),
       #count of purchases that were investor transactions by size
-      sm_inv = sum(sm_inv_f),
-      med_inv = sum(med_inv_f),
-      lrg_inv = sum(lrg_inv_f),
-      inst_inv = sum(inst_inv_f),
+      sm_inv = sum(sm_inv_f, na.rm = TRUE),
+      med_inv = sum(med_inv_f, na.rm = TRUE),
+      lrg_inv = sum(lrg_inv_f, na.rm = TRUE),
+      inst_inv = sum(inst_inv_f, na.rm = TRUE),
       #count of purchases that were investor transactions by type
-      llc_inv = sum(inv_llc_f),
-      value_inv = sum(v_inv_f),
-      count_inv = sum(c_inv_f),
-      build_inv = sum(b_inv_f),
+      llc_inv = sum(inv_llc_f, na.rm = TRUE),
+      value_inv = sum(v_inv_f, na.rm = TRUE),
+      count_inv = sum(c_inv_f, na.rm = TRUE),
+      build_inv = sum(b_inv_f, na.rm = TRUE),
       #count of purchases that were cash sales
-      cash_trans = sum(cash_sale),
+      cash_trans = sum(cash_sale, na.rm = TRUE),
       #count of purchases that were flips
-      flip_count = sum(flip_f),
+      flip_count = sum(flip_f, na.rm = TRUE),
       #count of purchases by investors that were not flips
-      inv_non_flip = sum(inv_non_flip_f),
+      inv_non_flip = sum(inv_non_flip_f, na.rm = TRUE),
       #count of purchases by non-investors that were flips
-      inv_flip = sum(inv_flip_f),
+      inv_flip = sum(inv_flip_f, na.rm = TRUE),
       #count of purchases of condos
-      con_trans = sum(con_f),
+      con_trans = sum(con_f, na.rm = TRUE),
       #count of condo purchases by investors
-      con_inv = sum(con_inv_f),
+      con_inv = sum(con_inv_f, na.rm = TRUE),
       #count of purchases of single family homes
-      sf_trans = sum(sf_f),
+      sf_trans = sum(sf_f, na.rm = TRUE),
       #count of single family home purchases by investors
-      sf_inv = sum(sf_inv_f),
+      sf_inv = sum(sf_inv_f, na.rm = TRUE),
       #count of purchases of two family homes
-      r2f_trans = sum(r2f_f),
+      r2f_trans = sum(r2f_f, na.rm = TRUE),
       #count of two family home purchases by investors
-      r2f_inv = sum(r2f_inv_f),
+      r2f_inv = sum(r2f_inv_f, na.rm = TRUE),
       #count of purchases of 3 family homes
-      r3f_trans = sum(r3f_f),
+      r3f_trans = sum(r3f_f, na.rm = TRUE),
       #count of three family home purchases by investors
-      r3f_inv = sum(r3f_inv_f)
+      r3f_inv = sum(r3f_inv_f, na.rm = TRUE)
       )
 
 
@@ -185,7 +169,7 @@ warren_join = full_join(warren_all, transactions_all, by = c({{geog}}, 'year')) 
       #overwriting data for geographies with less then 5 sales
       mutate(
         med_pr = ifelse(sales_frq2 < 5, NA, med_pr),
-        med_pr_adj = ifelse(sales_frq2 < 5, NA, med_pr)
+        med_pr_adj = ifelse(sales_frq2 < 5, NA, med_pr_adj)
       )
 
 return(warren_join)
