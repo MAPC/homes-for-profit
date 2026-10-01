@@ -209,7 +209,7 @@ investor_value <- function(df){
     group_by(final_name) %>%
     mutate(
       #total_value = sum(price_adj),
-      avg_annual_value = sum(price_adj)/total_years
+      avg_annual_value = sum(price_adj, na.rm = TRUE)/total_years
       #log10_total_value = log10(total_value)
     ) %>%
     ungroup() %>%
