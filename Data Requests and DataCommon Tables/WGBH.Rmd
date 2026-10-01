@@ -38,9 +38,11 @@ export_path = "K:/DataServices/Projects/Data_Requests/2026/WGBH_Neisloss"
 setwd(data_path)
 
 #starting from mapc filtered file
-warren <- read_csv("2000_2025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
+#warren <- read_csv("2000_2025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
 
-warren_clean <- warren |> 
+warren_nofd <- read_csv("2000_2025_warren_speculative-investment-analysis-dataset_withoutforeclosure_5yr-window-networks.csv")
+
+warren_clean <- warren_nofd |> 
   #clean up issue of missing inv_type_purchase due to NAs
   mutate(
     #make NAs a string
@@ -53,7 +55,7 @@ warren_clean <- warren |>
                                    ifelse((investor_type_purchase_value=='Small'| investor_type_purchase_count=='Small' | investor_type_purchase_llc=='Small LLC' | investor_type_purchase_building=='Building Investor'),'Small', 'Non-investor')))))
   )
 
-rm(warren)
+rm(warren_nofd)
 gc()
 ```
 
@@ -213,21 +215,36 @@ Top 10 gateway cities investors
 ```{r}
 top_inv <- warren_plus |> 
   #filtering to gateway cities and mapc regional urban centers
-  filter(municipal %in% gateway_cities | (cmtyp08 == "Regional Urban Center" & mapc == 1)) |> 
+#  filter(municipal %in% gateway_cities | (cmtyp08 == "Regional Urban Center" & mapc == 1)) |> 
+  #filter to 2-3 families
+#  filter(restype == "APT") |> 
   group_by(final_name) |> 
   summarize(total_purchases = n()) |> 
   #showing only investors with more than 100 transactions
-  filter(total_purchases > 100) |> 
+ # filter(total_purchases > 50) |> 
   arrange(desc(total_purchases))
 
-top_10 <- top_inv |> 
-  slice(0:10)
+top_20_apt <- top_inv |> 
+  slice(0:20)
 
-top_inv_munis <- warren_plus |> 
-  filter(final_name %in% top_10$final_name) |> 
-  group_by(municipal) |> 
-  summarize(count = n())
+# top_inv_munis <- warren_plus |> 
+#   filter(final_name %in% top_10$final_name) |> 
+#   group_by(municipal) |> 
+#   summarize(count = n())
   
+
+#addresses
+addresses_2f3f_inv_purchases <- warren_plus |> 
+  filter(network_group %in% top_20_2f3f$final_name) |> 
+  select(final_name, buyer1_adj, address, municipal)
+
+addresses_apt_inv_purchases <- warren_plus |> 
+  filter(network_group %in% top_20_apt$final_name) |> 
+  select(final_name, buyer1_adj, address, municipal)
+
+addresses_all_inv_purchases <- warren_plus |> 
+  filter(network_group %in% top_20$final_name) |> 
+  select(final_name, buyer1_adj, address, municipal)
 ```
 
 
@@ -235,9 +252,11 @@ top_inv_munis <- warren_plus |>
 ```{r}
 setwd(export_path)
 
-write.csv(twof_threef_gateway, "question1.csv")
+write.csv(twof_threef_gateway, "question1_nofd.csv")
 
-write.csv(twof_threef, "question1_statewide.csv")
+write.csv(twof_threef, "question1_statewide_nofd.csv")
+
+#write.csv(twof_threef_nogateway, "question1_statewide_nofd.csv")
 ```
 
 
@@ -289,15 +308,15 @@ who_owns_path <- "C:/Users/aderosa/OneDrive - Metropolitan Area Planning Council
 setwd(who_owns_path)
 owner_networks <- read_csv("owners.csv")
 
-top_10_network_xw <- owner_networks |> 
-  filter(network_group %in% top_10$final_name) |> 
+top_20_apt_network_xw <- owner_networks |> 
+  filter(network_group %in% top_20_apt$final_name) |> 
   select(name, network_group) |> 
   distinct() |> 
   arrange(network_group)
 
-owner_inst <- owner_networks |>
-  filter(inst == TRUE) |>
-  distinct(name, cosine_group, network_group)
+# owner_inst <- owner_networks |>
+#   filter(inst == TRUE) |>
+#   distinct(name, cosine_group, network_group)
 
 rm(owners_networks)
 # what information is in other network analysis tables that would be of interest for this request?
@@ -407,8 +426,11 @@ gc()
 ```{r}
 setwd(export_path)
 
-write.csv(top_10, "top_10_investors.csv")
-write.csv(top_10_network_xw, "top_10_networks_to_names.csv")
-write.csv(top_inv_munis, "muni_purchase_count_top_10_inv.csv")
+# write.csv(top_20_apt, "top_20_apt_investors_nofd.csv")
+# write.csv(top_20_apt_network_xw, "top_20_apt_networks_to_names_nofd.csv")
+# write.csv(top_inv_munis, "muni_purchase_count_top_10_inv_nofd.csv")
+write.csv(addresses_2f3f_inv_purchases, "addresses_2f3f_top_inv.csv")
+write.csv(addresses_apt_inv_purchases, "addresses_apt_top_inv.csv")
+write.csv(addresses_all_inv_purchases, "addresses_all_top_inv.csv")
 ```
 
