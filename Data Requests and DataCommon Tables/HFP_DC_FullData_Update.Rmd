@@ -23,7 +23,7 @@ data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Res
 setwd(data_path)
 
 #Data - 5yr window
-warren <- read_csv("20240328_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv")
+warren <- read_csv("2000_2025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
 ```
 
 #Clean data
