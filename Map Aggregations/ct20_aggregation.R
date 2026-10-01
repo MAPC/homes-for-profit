@@ -11,10 +11,10 @@ data_path <- "K:/DataServices/Projects/Current_Projects/Regional_Plan_Update_Res
 setwd(data_path)
 
 #Data - 5yr window
-warren <- read_csv("20240328_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window.csv")
+warren <- read_csv("2000_2025_warren_speculative-investment-analysis-dataset_withforeclosure_5yr-window-networks.csv")
 
 warren_select <- warren %>% 
-  select(ct20_id, muni_id, municipal, buyer1_adj, seller1_adj, latitude, longitude, year, cash_sale, price_adj, flip_horizon, flip_ind, buy_side_flip, sell_side_flip,
+  select(ct20_id, muni_id, municipal, buyer1_adj, seller1_adj, year, cash_sale, price_adj, flip_horizon, flip_ind, buy_side_flip, sell_side_flip,
          price_diff, price_diff_pch, restype, mapc_submarket, investor_type_purchase_count, investor_type_sale_count, 
          investor_type_purchase_llc, investor_type_sale_llc, investor_type_purchase_building, investor_type_sale_building, 
          investor_type_purchase_value, investor_type_sale_value, avg_annual_value, ID, investor_type_purchase, investor_type_sale)
@@ -27,6 +27,7 @@ warren_all <- warren_select %>%
 #summarizing different variables to 2020 census tracts
 ct_transactions_all <- warren_select %>% 
   group_by(ct20_id) %>% 
+  filter(year <= 2023) |>  #filter to use to re-run tables from original report
   summarize(trans_0023 = n())
 
 ct_transactions_2002_2021 <- warren_select %>% 
@@ -195,7 +196,7 @@ warren_ct20 <- full_join(warren_all, ct_transactions_all, by = 'ct20_id') %>%
   relocate(c("flip_p", "con_inv_p", "sf_inv_p", "r2f_inv_p", "r3f_inv_p"), .after = cash_p)
 
 #export ct table
-write.csv(warren_ct20, 'warren_ct20_agg_2000_2023.csv')
+write.csv(warren_ct20, 'warren_ct20_agg_2000_2023_networks.csv')
  
 # view(warren_ct20)
 # warren_ct20 %>% colnames()
