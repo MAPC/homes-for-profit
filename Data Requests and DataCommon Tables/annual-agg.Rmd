@@ -31,7 +31,7 @@ gc()
 ```
 
 ```{r, warning=FALSE}
-create_tables <- function(df, geog){
+create_tables <- function(df, geog, max_year = 2021, min_year = 2004){
   warren_all = df %>% 
     select(muni_id,{{geog}}, year) %>% 
     distinct()
@@ -55,25 +55,25 @@ create_tables <- function(df, geog){
     summarize(inv_trans = n())
   
   investor_small = df %>% 
-    filter(year >= 2004 & year <= 2021) %>%
+    filter(year >= min_year & year <= max_year) %>%
     filter(investor_type_purchase == 'Small') %>% 
     group_by(!!rlang::ensym(geog), year) %>% 
     summarize(sm_inv = n())
   
   investor_medium = df %>%
-    filter(year >= 2004 & year <= 2021) %>%
+    filter(year >= min_year & year <= max_year) %>%
     filter(investor_type_purchase == 'Medium') %>%
     group_by(!!rlang::ensym(geog), year) %>%
     summarize(med_inv = n())
 
   investor_large = df %>%
-    filter(year >= 2004 & year <= 2021) %>%
+    filter(year >= min_year & year <= max_year) %>%
     filter(investor_type_purchase == 'Large') %>%
     group_by(!!rlang::ensym(geog), year) %>%
     summarize(lrg_inv = n())
 
   investor_inst = df %>%
-    filter(year >= 2004 & year <= 2021) %>%
+    filter(year >= min_year & year <= max_year) %>%
     filter(investor_type_purchase == 'Institutional') %>%
     group_by(!!rlang::ensym(geog), year) %>%
     summarize(inst_inv = n())
@@ -89,7 +89,7 @@ create_tables <- function(df, geog){
     summarize(value_inv = n())
 
   investor_count = df %>%
-    filter(year >= 2004 & year <= 2021) %>%
+    filter(year >= min_year & year <= max_year) %>%
     filter(investor_type_purchase_count != 'Non-count investor') %>%
     group_by(!!rlang::ensym(geog), year) %>%
     summarize(count_inv = n())
@@ -106,14 +106,14 @@ create_tables <- function(df, geog){
 
   #number of flips
   flips = df %>%
-    filter(year >= 2002 & year <= 2021) %>%
+    filter(year >= 2002 & year <= max_year) %>%
     filter(flip_ind == 1) %>%
     group_by(!!rlang::ensym(geog), year) %>%
     summarize(flip_count = n())
 
   #count and % of condo investor purchases
   condos = df %>%
-    filter(year >= 2004 & year <= 2021) %>%
+    filter(year >= min_year & year <= max_year) %>%
     filter(restype == 'CON') %>%
     group_by(!!rlang::ensym(geog), year) %>%
     mutate(con_trans = n()) %>%
@@ -125,7 +125,7 @@ create_tables <- function(df, geog){
 
   #count and % of R1F investor purchases
   single_fam = df %>%
-    filter(year >= 2004 & year <= 2021) %>%
+    filter(year >= min_year & year <= max_year) %>%
     filter(restype == 'R1F') %>%
     group_by(!!rlang::ensym(geog), year) %>%
     mutate(sf_trans = n()) %>%
@@ -137,7 +137,7 @@ create_tables <- function(df, geog){
 
   #count and % of R2F investor purchases
   r2f = df %>%
-    filter(year >= 2004 & year <= 2021) %>%
+    filter(year >= min_year & year <= max_year) %>%
     filter(restype == 'R2F') %>%
     group_by(!!rlang::ensym(geog), year) %>%
     mutate(r2f_trans = n()) %>%
@@ -149,7 +149,7 @@ create_tables <- function(df, geog){
 
   #count and % of R3F investor purchases
   r3f = df %>%
-    filter(year >= 2004 & year <= 2021) %>%
+    filter(year >= min_year & year <= max_year) %>%
     filter(restype == 'R3F') %>%
     group_by(!!rlang::ensym(geog), year) %>%
     mutate(r3f_trans = n()) %>%
@@ -233,5 +233,27 @@ ct_publish <- annual_ct_agg |>
 
 #export ct table
 write.csv(ct_publish, 'warren_ct_annual_agg_2000_2025.csv')
+```
+
+#WGBH Data Request Muni Agg
+
+```{r}
+
+muni_fields<-mapcdatakeys::all_muni_data_keys%>%
+  select(muni_name, cmtyp08, cmsbt08, rpa_acr)%>%
+  mutate(`Gateway+` = ifelse(muni_name %in% gateway_cities | muni_name %in% rg_ub_center_mapc, 1, 0))%>%
+  rename(MAPC = rpa_acr,
+         CommSubTyp = cmsbt08,
+         CommTyp = cmtyp08)
+
+gbh_annual_muni_agg <- create_tables(warren_select, "municipal", min_year = 2004, max_year = 2025)%>%
+  full_join(., select(muni_fields, muni_name, `Gateway+`, MAPC, CommTyp, CommSubTyp), by= c("municipal" = "muni_name"))%>%
+  relocate( `Gateway+`, MAPC, CommTyp, CommSubTyp, .after = municipal)%>%
+  arrange(municipal, year)
+
+
+#export muni table
+write.csv(gbh_annual_muni_agg, file.path(export_path, 'warren_municipal_annual_agg_2000_2025.csv'))
+
 ```
 
